@@ -16,6 +16,7 @@ export async function submitOrder(
   try {
     const response = await axios.post(url, payload, {
       headers: {
+        origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
       },

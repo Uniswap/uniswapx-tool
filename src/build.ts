@@ -1,5 +1,5 @@
-import { BigNumber } from 'ethers'
-import { DutchOrderBuilder, Order } from '@uniswap/uniswapx-sdk';
+import { DutchOrder, DutchOrderBuilder } from '@uniswap/uniswapx-sdk';
+import { BigNumber } from 'ethers';
 
 import { CHAIN_ID } from './config';
 
@@ -22,22 +22,23 @@ export type OrderParams = {
 const DEFAULT_OVERRIDE_BPS = 100;
 
 // returns encoded order
-export function buildOrder(params: OrderParams): Order {
-  const builder = new DutchOrderBuilder(CHAIN_ID).input({
-    token: params.tokenIn,
-    startAmount: BigNumber.from(params.amountInStart),
-    endAmount: BigNumber.from(params.amountInEnd),
-  })
-  .output({
-    token: params.tokenOut,
-    startAmount: BigNumber.from(params.amountOutStart),
-    endAmount: BigNumber.from(params.amountOutEnd),
-    recipient: params.swapper,
-  })
-  .swapper(params.swapper)
+export function buildOrder(params: OrderParams): DutchOrder {
+  const builder = new DutchOrderBuilder(CHAIN_ID)
+    .input({
+      token: params.tokenIn,
+      startAmount: BigNumber.from(params.amountInStart),
+      endAmount: BigNumber.from(params.amountInEnd),
+    })
+    .output({
+      token: params.tokenOut,
+      startAmount: BigNumber.from(params.amountOutStart),
+      endAmount: BigNumber.from(params.amountOutEnd),
+      recipient: params.swapper,
+    })
+    .swapper(params.swapper);
   if (params.exclusiveFiller) {
     const override = params.exclusivityOverrideBps ?? DEFAULT_OVERRIDE_BPS;
-    builder.exclusiveFiller(params.exclusiveFiller, BigNumber.from(override))
+    builder.exclusiveFiller(params.exclusiveFiller, BigNumber.from(override));
   }
   if (params.decayStartTime) {
     builder.decayStartTime(params.decayStartTime);
