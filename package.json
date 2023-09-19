@@ -9,6 +9,7 @@
   "license": "MIT",
   "keywords": [],
   "scripts": {
+    "start": "yarn build && node ./build/main/index.js",
     "build": "run-p build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
@@ -43,7 +44,10 @@
   },
   "dependencies": {
     "@bitauth/libauth": "^1.17.1",
-    "commander": "^11.0.0"
+    "@uniswap/uniswapx-sdk": "^1.4.0",
+    "axios": "^1.5.0",
+    "commander": "^11.0.0",
+    "ethers": "^5.7.2"
   },
   "devDependencies": {
     "@ava/typescript": "^1.1.1",
@@ -103,5 +107,8 @@
     "exclude": [
       "**/*.spec.js"
     ]
+  },
+  "bin": {
+    "uniswapx": "./bin/uniswapx"
   }
 }
