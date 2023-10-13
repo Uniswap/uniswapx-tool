@@ -92,11 +92,7 @@ function setupProgram() {
       '--exclusivity-override-bps [exclusivityOverrideBps]',
       'Exclusivity Override Bps'
     )
-    .option(
-      '--add-fee-output',
-      'Add an additional output',
-      false
-    )
+    .option('--add-fee-output', 'Add an additional output', false)
     .action(async (options) => {
       const order = buildOrder({
         tokenIn: options.tokenIn,

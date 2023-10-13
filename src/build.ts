@@ -26,6 +26,17 @@ const BPS = 10_000;
 
 // returns encoded order
 export function buildOrder(params: OrderParams): DutchOrder {
+  let feeAmountStart = BigNumber.from(0);
+  let feeAmountEnd = BigNumber.from(0);
+  if (params.addFeeOutput) {
+    feeAmountStart = BigNumber.from(params.amountOutStart)
+      .mul(DEFAULT_FEES_BPS)
+      .div(BPS);
+    feeAmountEnd = BigNumber.from(params.amountOutEnd)
+      .mul(DEFAULT_FEES_BPS)
+      .div(BPS);
+  }
+
   const builder = new DutchOrderBuilder(CHAIN_ID)
     .input({
       token: params.tokenIn,
@@ -34,20 +45,19 @@ export function buildOrder(params: OrderParams): DutchOrder {
     })
     .output({
       token: params.tokenOut,
-      startAmount: BigNumber.from(params.amountOutStart),
-      endAmount: BigNumber.from(params.amountOutEnd),
+      // Fees are subtractive not additive
+      startAmount: BigNumber.from(params.amountOutStart).sub(feeAmountStart),
+      endAmount: BigNumber.from(params.amountOutEnd).sub(feeAmountEnd),
       recipient: params.swapper,
     })
     .swapper(params.swapper);
-  
+
   if (params.addFeeOutput) {
-    const feeAmountStart = BigNumber.from(params.amountOutStart).mul(DEFAULT_FEES_BPS).div(BPS);
-    const feeAmountEnd = BigNumber.from(params.amountOutEnd).mul(DEFAULT_FEES_BPS).div(BPS);
     builder.output({
       token: params.tokenOut,
       startAmount: feeAmountStart,
       endAmount: feeAmountEnd,
-      // since this is used for testing only 
+      // Since this is used for testing only
       // we just send the extra output back to the swapper
       recipient: params.swapper,
     });
