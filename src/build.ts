@@ -17,9 +17,12 @@ export type OrderParams = {
   readonly decayEndTime?: number;
   readonly exclusiveFiller?: string;
   readonly exclusivityOverrideBps?: string;
+  readonly addFeeOutput?: boolean;
 };
 
 const DEFAULT_OVERRIDE_BPS = 100;
+const DEFAULT_FEES_BPS = 15;
+const BPS = 10_000;
 
 // returns encoded order
 export function buildOrder(params: OrderParams): DutchOrder {
@@ -36,6 +39,20 @@ export function buildOrder(params: OrderParams): DutchOrder {
       recipient: params.swapper,
     })
     .swapper(params.swapper);
+  
+  if (params.addFeeOutput) {
+    const feeAmountStart = BigNumber.from(params.amountOutStart).mul(DEFAULT_FEES_BPS).div(BPS);
+    const feeAmountEnd = BigNumber.from(params.amountOutEnd).mul(DEFAULT_FEES_BPS).div(BPS);
+    builder.output({
+      token: params.tokenOut,
+      startAmount: feeAmountStart,
+      endAmount: feeAmountEnd,
+      // since this is used for testing only 
+      // we just send the extra output back to the swapper
+      recipient: params.swapper,
+    });
+  }
+
   if (params.exclusiveFiller) {
     const override = params.exclusivityOverrideBps ?? DEFAULT_OVERRIDE_BPS;
     builder.exclusiveFiller(params.exclusiveFiller, BigNumber.from(override));
