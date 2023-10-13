@@ -92,6 +92,7 @@ function setupProgram() {
       '--exclusivity-override-bps [exclusivityOverrideBps]',
       'Exclusivity Override Bps'
     )
+    .option('--add-fee-output', 'Add an additional output', false)
     .action(async (options) => {
       const order = buildOrder({
         tokenIn: options.tokenIn,
@@ -103,6 +104,7 @@ function setupProgram() {
         swapper: options.swapper,
         exclusiveFiller: options.exclusiveFiller,
         exclusivityOverrideBps: options.exclusivityOverrideBps,
+        addFeeOutput: options.addFeeOutput,
       });
       if (options.serialize) {
         console.log(order.serialize());
