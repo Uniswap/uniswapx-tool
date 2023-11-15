@@ -1,4 +1,4 @@
-import { DutchOrder } from '@uniswap/uniswapx-sdk';
+import { DutchOrder, DutchOrderBuilder } from '@uniswap/uniswapx-sdk';
 import axios from 'axios';
 
 import { CHAIN_ID, Config } from './config';
@@ -7,6 +7,15 @@ enum TradeType {
   EXACT_INPUT = 'exactIn',
   EXACT_OUTPUT = 'exactOut',
 }
+
+export type QuoteResponse = {
+  readonly encodedOrder: string;
+  readonly orderHash: string;
+  readonly startTimeBufferSecs: number;
+  readonly auctionPeriodSecs: number;
+  readonly deadlineBufferSecs: number;
+  readonly slippageTolerance: string;
+};
 
 export type QuoteRequestType = {
   readonly tokenInChainId: number;
@@ -72,6 +81,18 @@ export async function quoteOrder(
     console.error('No quote available');
     process.exit(1);
   }
+  const responseData: QuoteResponse = response.data.quote;
 
-  return DutchOrder.parse(response.data.quote.encodedOrder, CHAIN_ID);
+  const order = DutchOrder.parse(responseData.encodedOrder, CHAIN_ID);
+  const builder = DutchOrderBuilder.fromOrder(order);
+  const startTime =
+    Math.floor(Date.now() / 1000) + responseData.startTimeBufferSecs;
+  const endTime = startTime + responseData.auctionPeriodSecs;
+  const deadline = endTime + responseData.deadlineBufferSecs;
+
+  return builder
+    .decayStartTime(startTime)
+    .decayEndTime(endTime)
+    .deadline(deadline)
+    .build();
 }
