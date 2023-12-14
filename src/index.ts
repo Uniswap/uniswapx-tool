@@ -121,7 +121,7 @@ function setupProgram() {
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
     .option('--quote-id [quoteId]', 'add quote id to order')
-    .option('--random_qid', 'add random quote id to order')
+    .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
