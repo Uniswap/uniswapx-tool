@@ -44,7 +44,8 @@ function setupProgram() {
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
-      let order = await quoteOrder(
+      // eslint-disable-next-line prefer-const
+      let { order, quoteId } = await quoteOrder(
         {
           tokenIn: options.tokenIn,
           tokenOut: options.tokenOut,
@@ -73,7 +74,10 @@ function setupProgram() {
       if (options.serialize) {
         console.log(order.serialize());
       } else {
-        console.log(order.toJSON());
+        console.log({
+          ...order.toJSON(),
+          quoteId: quoteId,
+        });
       }
     });
 
