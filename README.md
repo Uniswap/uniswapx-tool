@@ -14,6 +14,7 @@ CLI tool for UniswapX
 # Usage
 
 ## Quote
+
 Create UniswapX orders using live quotes
 
 ```sh
@@ -39,6 +40,7 @@ Global Options:
 ```
 
 ## Build
+
 Builds a UniswapX order from params
 
 ```
@@ -65,11 +67,12 @@ Global Options:
   --env <env>                                          Environment (choices: "beta", "prod", default: "beta")
 ```
 
-
 ## Submit
+
 Submits a UniswapX order, signing it as well if private key given
 
 Note: the address of the private key must:
+
 - match the swapper address of the order
 - have already approved the input token(s) to permit2
 
@@ -83,8 +86,10 @@ Arguments:
   serializedOrder             serialized order
 
 Options:
-  --signature [signature]     signature
-  --private-key [privateKey]  private key
+  --signature [signature]               signature
+  --private-key [privateKey]            private key
+  --quote-id [quoteId] (optional)       add quote-id to order submission body
+  --random-qid (optional)               add random quote-id to order submission body
   -h, --help                  display help for command
 
 Global Options:
@@ -93,8 +98,9 @@ Global Options:
 ```
 
 ## Simple order creation
+
 Simple way to create, sign and submit an order all at once
 
 ```sh
-uniswapx quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --exclusive-filler <exclusiveFiller> --serialize | xargs uniswapx submit --private-key <privateKey>
+uniswapx quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --exclusive-filler <exclusiveFiller> --serialize | xargs uniswapx submit --random-qid --private-key <privateKey>
 ```

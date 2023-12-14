@@ -5,13 +5,15 @@ import { CHAIN_ID, Config } from './config';
 export async function submitOrder(
   config: Config,
   encodedOrder: string,
-  signature: string
+  signature: string,
+  quoteId?: string
 ) {
   const url = `${config.uniswapAPIUrl}/v2/order`;
   const payload = {
     encodedOrder,
     signature,
     chainId: CHAIN_ID,
+    quoteId: quoteId,
   };
   try {
     const response = await axios.post(url, payload, {
