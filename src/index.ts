@@ -1,6 +1,7 @@
 import { DutchOrder } from '@uniswap/uniswapx-sdk';
 import { Option, program } from 'commander';
 import { Wallet } from 'ethers';
+import { v4 as uuidv4 } from 'uuid';
 
 import { buildOrder } from './build';
 import { CHAIN_ID, getConfig } from './config';
@@ -120,6 +121,7 @@ function setupProgram() {
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
     .option('--quote-id [quoteId]', 'add quote id to order')
+    .option('--random_qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -127,6 +129,8 @@ function setupProgram() {
       let quoteId: string;
       if (options.quoteId) {
         quoteId = options.quoteId;
+      } else if (options.random_qid) {
+        quoteId = uuidv4();
       }
       if (options.signature) {
         signature = options.signature;
