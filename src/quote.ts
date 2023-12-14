@@ -15,6 +15,7 @@ export type QuoteResponse = {
   readonly auctionPeriodSecs: number;
   readonly deadlineBufferSecs: number;
   readonly slippageTolerance: string;
+  readonly quoteId: string;
 };
 
 export type QuoteRequestType = {
@@ -48,7 +49,7 @@ export type QuoteParams = {
 export async function quoteOrder(
   params: QuoteParams,
   config: Config
-): Promise<DutchOrder> {
+): Promise<{ readonly order: DutchOrder; readonly quoteId: string }> {
   const payload: QuoteRequestType = {
     tokenInChainId: CHAIN_ID,
     tokenIn: params.tokenIn,
@@ -82,6 +83,7 @@ export async function quoteOrder(
     process.exit(1);
   }
   const responseData: QuoteResponse = response.data.quote;
+  const qid = responseData.quoteId;
 
   const order = DutchOrder.parse(responseData.encodedOrder, CHAIN_ID);
   const builder = DutchOrderBuilder.fromOrder(order);
@@ -90,9 +92,12 @@ export async function quoteOrder(
   const endTime = startTime + responseData.auctionPeriodSecs;
   const deadline = endTime + responseData.deadlineBufferSecs;
 
-  return builder
-    .decayStartTime(startTime)
-    .decayEndTime(endTime)
-    .deadline(deadline)
-    .build();
+  return {
+    order: builder
+      .decayStartTime(startTime)
+      .decayEndTime(endTime)
+      .deadline(deadline)
+      .build(),
+    quoteId: qid,
+  };
 }
