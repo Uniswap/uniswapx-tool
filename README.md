@@ -39,6 +39,32 @@ Global Options:
   --env <env>                                          Environment (choices: "beta", "prod", default: "beta")
 ```
 
+```
+❯ uniswapx quote --tokenIn <tIn> --tokenOut <tOut> --amount <amount> --swapper <swapper> --exclusive-filler <filler>
+
+{
+  chainId: 1,
+  permit2Address: ..,
+  reactor: ...,
+  swapper: ...,
+  nonce: ...,
+  deadline: ...,
+  additionalValidationContract: ...,
+  additionalValidationData: ...,
+  decayStartTime: ...,
+  decayEndTime: ...,
+  exclusiveFiller: ...,
+  exclusivityOverrideBps: '100',
+  input: {
+    token: ...,
+    startAmount: ...,
+    endAmount: ...,
+  },
+  outputs: [{ ... }],
+  quoteId: <uuid v4>
+}
+```
+
 ## Build
 
 Builds a UniswapX order from params
