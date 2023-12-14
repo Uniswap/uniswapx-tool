@@ -119,10 +119,15 @@ function setupProgram() {
     .argument('<serializedOrder>', 'serialized order')
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
+    .option('--quote-id [quoteId]', 'add quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
       let signature: string;
+      let quoteId: string;
+      if (options.quoteId) {
+        quoteId = options.quoteId;
+      }
       if (options.signature) {
         signature = options.signature;
       } else if (options.privateKey) {
@@ -134,7 +139,7 @@ function setupProgram() {
         console.error('Either signature or private key is required');
         process.exit(1);
       }
-      await submitOrder(config, serializedOrder, signature);
+      await submitOrder(config, serializedOrder, signature, quoteId);
     });
 }
 
