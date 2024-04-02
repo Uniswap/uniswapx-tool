@@ -1,12 +1,12 @@
 import { DutchOrder, UnsignedV2DutchOrder } from '@uniswap/uniswapx-sdk';
-import { Option, Command, program } from 'commander';
+import { Command, Option, program } from 'commander';
 import { Wallet } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
 
 import { buildOrder } from './build';
 import { CHAIN_ID, getConfig } from './config';
 import { quoteV1Order, quoteV2Order } from './quote';
-import { signOrder } from './sign';
+import { signV1Order, signV2Order } from './sign';
 import { submitV1Order, submitV2Order } from './submit';
 
 function setupProgram() {
@@ -140,13 +140,13 @@ function setupUniswapXV1() {
       let quoteId: string;
       if (options.quoteId) {
         quoteId = options.quoteId;
-      } else if (options.random_qid) {
+      } else if (options.randomQid) {
         quoteId = uuidv4();
       }
       if (options.signature) {
         signature = options.signature;
       } else if (options.privateKey) {
-        ({ signature } = await signOrder(
+        ({ signature } = await signV1Order(
           serializedOrder,
           new Wallet(options.privateKey)
         ));
@@ -176,11 +176,7 @@ function setupUniswapXV2() {
         .default('exactIn')
     )
     .option('--serialize', 'Return serialized order', false)
-    .option('--exclusive-filler [exclusiveFiller]', 'Exclusive Filler')
-    .option(
-      '--exclusivity-override-bps [exclusivityOverrideBps]',
-      'Exclusivity Override Bps'
-    )
+    .option('--cosigner [cosigner]', 'Cosigner')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -197,14 +193,11 @@ function setupUniswapXV2() {
       );
 
       // rebuild with overrides
-      if (options.exclusiveFiller || options.exclusivityOverrideBps) {
+      if (options.cosigner) {
         order = UnsignedV2DutchOrder.fromJSON(
           Object.assign(order.toJSON(), {
-            ...(options.exclusiveFiller && {
-              exclusiveFiller: options.exclusiveFiller,
-            }),
-            ...(options.exclusivityOverrideBps && {
-              exclusivityOverrideBps: options.exclusivityOverrideBps,
+            ...(options.cosigner && {
+              cosigner: options.cosigner,
             }),
           }),
           CHAIN_ID
@@ -236,13 +229,13 @@ function setupUniswapXV2() {
       let quoteId: string;
       if (options.quoteId) {
         quoteId = options.quoteId;
-      } else if (options.random_qid) {
+      } else if (options.randomQid) {
         quoteId = uuidv4();
       }
       if (options.signature) {
         signature = options.signature;
       } else if (options.privateKey) {
-        ({ signature } = await signOrder(
+        ({ signature } = await signV2Order(
           serializedOrder,
           new Wallet(options.privateKey)
         ));
