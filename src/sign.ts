@@ -1,7 +1,11 @@
-import { DutchOrder } from '@uniswap/uniswapx-sdk';
+import {
+  DutchOrder,
+  UniswapXOrder,
+  UnsignedV2DutchOrder,
+} from '@uniswap/uniswapx-sdk';
 import { Wallet } from 'ethers';
 
-export async function signOrder(
+export async function signV1Order(
   encodedOrder: string,
   wallet: Wallet
 ): Promise<{
@@ -10,7 +14,31 @@ export async function signOrder(
   readonly signature: string;
 }> {
   const order = DutchOrder.parse(encodedOrder, 1);
+  const signature = await signOrder(order, wallet);
+  const serializedOrder = order.serialize();
+  const hash = order.hash();
+  return { serializedOrder, hash, signature };
+}
 
+export async function signV2Order(
+  encodedOrder: string,
+  wallet: Wallet
+): Promise<{
+  readonly serializedOrder: string;
+  readonly hash: string;
+  readonly signature: string;
+}> {
+  const order = UnsignedV2DutchOrder.parse(encodedOrder, 1);
+  const signature = await signOrder(order, wallet);
+  const serializedOrder = order.serialize();
+  const hash = order.hash();
+  return { serializedOrder, hash, signature };
+}
+
+async function signOrder(
+  order: UniswapXOrder,
+  wallet: Wallet
+): Promise<string> {
   if (
     order.info.swapper.toLowerCase() != wallet.address.toLowerCase() ||
     order.info.outputs.some(
@@ -22,10 +50,6 @@ export async function signOrder(
     );
   }
 
-  // Sign the built order
   const { domain, types, values } = order.permitData();
-  const signature = await wallet._signTypedData(domain, types, values);
-  const serializedOrder = order.serialize();
-  const hash = order.hash();
-  return { serializedOrder, hash, signature };
+  return await wallet._signTypedData(domain, types, values);
 }

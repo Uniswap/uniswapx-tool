@@ -13,12 +13,14 @@ CLI tool for UniswapX
 
 # Usage
 
+# UniswapX V1
+
 ## Quote
 
 Create UniswapX orders using live quotes
 
 ```sh
-> uniswapx quote -h
+> uniswapx v1 quote -h
 Usage: uniswapx quote [options]
 
 Quote a UniswapX order
@@ -40,7 +42,7 @@ Global Options:
 ```
 
 ```
-❯ uniswapx quote --tokenIn <tIn> --tokenOut <tOut> --amount <amount> --swapper <swapper> --exclusive-filler <filler>
+❯ uniswapx v1 quote --tokenIn <tIn> --tokenOut <tOut> --amount <amount> --swapper <swapper> --exclusive-filler <filler>
 
 {
   chainId: 1,
@@ -67,10 +69,10 @@ Global Options:
 
 ## Build
 
-Builds a UniswapX order from params
+Builds a UniswapX V1 order from params
 
 ```
-> uniswapx build -h
+> uniswapx v1 build -h
 Usage: uniswapx build [options]
 
 Build a UniswapX order
@@ -103,7 +105,7 @@ Note: the address of the private key must:
 - have already approved the input token(s) to permit2
 
 ```
-> uniswapx submit -h
+> uniswapx v1 submit -h
 Usage: uniswapx submit [options] <serializedOrder>
 
 Submit a UniswapX order
@@ -128,5 +130,97 @@ Global Options:
 Simple way to create, sign and submit an order all at once
 
 ```sh
-uniswapx quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --exclusive-filler <exclusiveFiller> --serialize | xargs uniswapx submit --random-qid --private-key <privateKey>
+uniswapx v1 quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --exclusive-filler <exclusiveFiller> --serialize | xargs uniswapx v1 submit --random-qid --private-key <privateKey>
+```
+
+
+# UniswapX V2
+
+## Quote
+
+Create UniswapX V2 orders using live quotes
+
+```sh
+> uniswapx v2 quote -h
+Usage: uniswapx v2 quote [options]
+
+Quote a UniswapX V2 order
+
+Options:
+  --tokenIn <tokenIn>    Token In
+  --tokenOut <tokenOut>  Token Out
+  --amount <amount>      Amount In Start
+  --swapper <swapper>    Swapper
+  --type <type>          Trade Type (choices: "exactIn", "exactOut", default: "exactIn")
+  --serialize            Return serialized order (default: false)
+  --cosigner [cosigner]  Cosigner
+  -h, --help             display help for command
+```
+
+```
+❯ uniswapx v2 quote --tokenIn <tIn> --tokenOut <tOut> --amount <amount> --swapper <swapper> --exclusive-filler <filler>
+
+{
+  chainId: 1,
+  permit2Address: ...,
+  reactor: ...,
+  swapper: ...,
+  nonce: ...,
+  deadline: ...,
+  additionalValidationContract: ...,
+  additionalValidationData: ...,
+  input: {
+    token: ...,
+    startAmount: ...,
+    endAmount: ...
+  },
+  outputs: [
+    {
+      token: ...,
+      startAmount: ...,
+      endAmount: ...,
+      recipient: ...
+    }
+  ],
+  cosigner: ...,
+  quoteId: ...
+}
+```
+
+## Submit
+
+Submits a UniswapX V2 order, signing it as well if private key given
+
+Note: the address of the private key must:
+
+- match the swapper address of the order
+- have already approved the input token(s) to permit2
+
+```
+> uniswapx v2 submit -h
+Usage: uniswapx v2 submit [options] <serializedOrder>
+
+Submit a UniswapX v2 order
+
+Arguments:
+  serializedOrder             serialized order
+
+Options:
+  --signature [signature]               signature
+  --private-key [privateKey]            private key
+  --quote-id [quoteId] (optional)       add quote-id to order submission body
+  --random-qid (optional)               add random quote-id to order submission body
+  -h, --help                  display help for command
+
+Global Options:
+  -V, --version               output the version number
+  --env <env>                 Environment (choices: "beta", "prod", default: "beta")
+```
+
+## Simple order creation
+
+Simple way to create, sign and submit an order all at once
+
+```sh
+uniswapx v2 quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --serialize | xargs uniswapx v2 submit --random-qid --private-key <privateKey>
 ```

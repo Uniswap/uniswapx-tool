@@ -1,4 +1,8 @@
-import { DutchOrder, DutchOrderBuilder, UnsignedV2DutchOrder } from '@uniswap/uniswapx-sdk';
+import {
+  DutchOrder,
+  DutchOrderBuilder,
+  UnsignedV2DutchOrder,
+} from '@uniswap/uniswapx-sdk';
 import axios from 'axios';
 
 import { CHAIN_ID, Config } from './config';
@@ -93,7 +97,10 @@ export async function quoteV2Order(
   };
 }
 
-function buildQuoteRequest(params: QuoteParams, orderType: OrderType): QuoteRequestType {
+function buildQuoteRequest(
+  params: QuoteParams,
+  orderType: OrderType
+): QuoteRequestType {
   return {
     tokenInChainId: CHAIN_ID,
     tokenIn: params.tokenIn,
@@ -112,7 +119,10 @@ function buildQuoteRequest(params: QuoteParams, orderType: OrderType): QuoteRequ
   };
 }
 
-async function makeQuoteRequest(payload: QuoteRequestType, config: Config): Promise<QuoteResponse> {
+async function makeQuoteRequest(
+  payload: QuoteRequestType,
+  config: Config
+): Promise<QuoteResponse> {
   const response = await axios.post(
     `${config.uniswapAPIUrl}/v2/quote`,
     payload,

@@ -57,7 +57,7 @@ export async function submitV2Order(
         'content-type': 'application/json',
       },
     });
-    if (response.status !== 201) {
+    if (response.status !== 200) {
       throw new Error(`Order submission failed with ${response.status}`);
     }
     const { hash } = response.data;
