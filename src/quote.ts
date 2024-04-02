@@ -1,7 +1,12 @@
-import { DutchOrder, DutchOrderBuilder } from '@uniswap/uniswapx-sdk';
+import { DutchOrder, DutchOrderBuilder, UnsignedV2DutchOrder } from '@uniswap/uniswapx-sdk';
 import axios from 'axios';
 
 import { CHAIN_ID, Config } from './config';
+
+enum OrderType {
+  DUTCH_V1 = 'DUTCH_LIMIT',
+  DUTCH_V2 = 'DUTCH_V2',
+}
 
 enum TradeType {
   EXACT_INPUT = 'exactIn',
@@ -28,7 +33,7 @@ export type QuoteRequestType = {
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
   readonly configs: readonly {
-    readonly routingType: 'DUTCH_LIMIT';
+    readonly routingType: OrderType;
     readonly swapper: string;
     readonly recipient?: string;
     readonly exclusivePeriodSecs?: number;
@@ -46,43 +51,12 @@ export type QuoteParams = {
 };
 
 // returns encoded order
-export async function quoteOrder(
+export async function quoteV1Order(
   params: QuoteParams,
   config: Config
 ): Promise<{ readonly order: DutchOrder; readonly quoteId: string }> {
-  const payload: QuoteRequestType = {
-    tokenInChainId: CHAIN_ID,
-    tokenIn: params.tokenIn,
-    tokenOutChainId: CHAIN_ID,
-    tokenOut: params.tokenOut,
-    amount: params.amount,
-    type:
-      params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
-    configs: [
-      {
-        routingType: 'DUTCH_LIMIT',
-        swapper: params.swapper,
-        recipient: params.swapper,
-      },
-    ],
-  };
-  const response = await axios.post(
-    `${config.uniswapAPIUrl}/v2/quote`,
-    payload,
-    {
-      headers: {
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        referrer: 'https://app.uniswap.org/',
-        origin: 'https://app.uniswap.org/',
-      },
-    }
-  );
-  if (!response.data) {
-    console.error('No quote available');
-    process.exit(1);
-  }
-  const responseData: QuoteResponse = response.data.quote;
+  const payload = buildQuoteRequest(params, OrderType.DUTCH_V1);
+  const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
 
   const order = DutchOrder.parse(responseData.encodedOrder, CHAIN_ID);
@@ -100,4 +74,60 @@ export async function quoteOrder(
       .build(),
     quoteId: qid,
   };
+}
+
+// returns encoded order
+export async function quoteV2Order(
+  params: QuoteParams,
+  config: Config
+): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
+  const payload = buildQuoteRequest(params, OrderType.DUTCH_V2);
+  const responseData = await makeQuoteRequest(payload, config);
+  const qid = responseData.quoteId;
+
+  const order = UnsignedV2DutchOrder.parse(responseData.encodedOrder, CHAIN_ID);
+
+  return {
+    order,
+    quoteId: qid,
+  };
+}
+
+function buildQuoteRequest(params: QuoteParams, orderType: OrderType): QuoteRequestType {
+  return {
+    tokenInChainId: CHAIN_ID,
+    tokenIn: params.tokenIn,
+    tokenOutChainId: CHAIN_ID,
+    tokenOut: params.tokenOut,
+    amount: params.amount,
+    type:
+      params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
+    configs: [
+      {
+        routingType: orderType,
+        swapper: params.swapper,
+        recipient: params.swapper,
+      },
+    ],
+  };
+}
+
+async function makeQuoteRequest(payload: QuoteRequestType, config: Config): Promise<QuoteResponse> {
+  const response = await axios.post(
+    `${config.uniswapAPIUrl}/v2/quote`,
+    payload,
+    {
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        referrer: 'https://app.uniswap.org/',
+        origin: 'https://app.uniswap.org/',
+      },
+    }
+  );
+  if (!response.data) {
+    console.error('No quote available');
+    process.exit(1);
+  }
+  return response.data.quote;
 }
