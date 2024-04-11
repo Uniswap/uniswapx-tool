@@ -48,6 +48,7 @@ export async function submitV2Order(
     tokenOutChainId: CHAIN_ID,
     quoteId: quoteId,
     requestId: quoteId,
+    allowNoQuote: true,
   };
   try {
     const response = await axios.post(url, payload, {
