@@ -61,9 +61,11 @@ export async function submitV2Order(
     if (response.status !== 200) {
       throw new Error(`Order submission failed with ${response.status}`);
     }
-    const { hash } = response.data;
-    console.log(`Order submitted with hash ${hash}`);
-    return hash;
+    const { orderHash, requestId } = response.data;
+    console.log(
+      `Order submitted with hash ${orderHash}, requestId ${requestId}`
+    );
+    return orderHash;
   } catch (e) {
     console.log(e);
   }
