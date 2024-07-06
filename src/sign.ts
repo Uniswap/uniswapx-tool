@@ -22,13 +22,14 @@ export async function signV1Order(
 
 export async function signV2Order(
   encodedOrder: string,
-  wallet: Wallet
+  wallet: Wallet,
+  chainId: number
 ): Promise<{
   readonly serializedOrder: string;
   readonly hash: string;
   readonly signature: string;
 }> {
-  const order = UnsignedV2DutchOrder.parse(encodedOrder, 1);
+  const order = UnsignedV2DutchOrder.parse(encodedOrder, chainId);
   const signature = await signOrder(order, wallet);
   const serializedOrder = order.serialize();
   const hash = order.hash();
