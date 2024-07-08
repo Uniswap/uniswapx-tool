@@ -1,7 +1,7 @@
 import { DutchOrder, DutchOrderBuilder } from '@uniswap/uniswapx-sdk';
 import { BigNumber } from 'ethers';
 
-import { CHAIN_ID } from './config';
+import { MAINNET_CHAINID } from './config';
 
 export type OrderParams = {
   readonly swapper: string;
@@ -37,7 +37,7 @@ export function buildOrder(params: OrderParams): DutchOrder {
       .div(BPS);
   }
 
-  const builder = new DutchOrderBuilder(CHAIN_ID)
+  const builder = new DutchOrderBuilder(MAINNET_CHAINID)
     .input({
       token: params.tokenIn,
       startAmount: BigNumber.from(params.amountInStart),

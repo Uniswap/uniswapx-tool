@@ -1,8 +1,7 @@
 const BETA_UNISWAP_API_URL = 'https://beta.api.uniswap.org';
 const PROD_UNISWAP_API_URL = 'https://api.uniswap.org';
 
-// for now until more chains supported
-export const CHAIN_ID = 1;
+export const MAINNET_CHAINID = 1;
 
 export type Config = {
   readonly uniswapAPIUrl: string;

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { CHAIN_ID, Config } from './config';
+import { Config, MAINNET_CHAINID } from './config';
 
 export async function submitV1Order(
   config: Config,
@@ -12,7 +12,7 @@ export async function submitV1Order(
   const payload = {
     encodedOrder,
     signature,
-    chainId: CHAIN_ID,
+    chainId: MAINNET_CHAINID,
     quoteId: quoteId,
   };
   try {
@@ -38,14 +38,15 @@ export async function submitV2Order(
   config: Config,
   encodedInnerOrder: string,
   innerSig: string,
+  chainId: number,
   quoteId?: string
 ) {
   const url = `${config.uniswapAPIUrl}/v2/rfq`;
   const payload = {
     encodedInnerOrder,
     innerSig,
-    tokenInChainId: CHAIN_ID,
-    tokenOutChainId: CHAIN_ID,
+    tokenInChainId: chainId,
+    tokenOutChainId: chainId,
     quoteId: quoteId,
     requestId: quoteId,
     allowNoQuote: true,

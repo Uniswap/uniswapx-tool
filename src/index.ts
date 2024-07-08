@@ -4,7 +4,7 @@ import { Wallet } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
 
 import { buildOrder } from './build';
-import { CHAIN_ID, getConfig } from './config';
+import { getConfig, MAINNET_CHAINID } from './config';
 import { quoteV1Order, quoteV2Order } from './quote';
 import { signV1Order, signV2Order } from './sign';
 import { submitV1Order, submitV2Order } from './submit';
@@ -74,7 +74,7 @@ function setupUniswapXV1() {
               exclusivityOverrideBps: options.exclusivityOverrideBps,
             }),
           }),
-          CHAIN_ID
+          MAINNET_CHAINID
         );
       }
 
@@ -177,6 +177,8 @@ function setupUniswapXV2() {
     )
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
+    .option('-c, --chain-id [chainId]', 'chain id', '1')
+    .option('--openOrder', 'Force Open Order', false)
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -189,7 +191,9 @@ function setupUniswapXV2() {
           swapper: options.swapper,
           type: options.type,
         },
-        config
+        config,
+        options.chainId,
+        options.openOrder
       );
 
       // rebuild with overrides
@@ -200,7 +204,7 @@ function setupUniswapXV2() {
               cosigner: options.cosigner,
             }),
           }),
-          CHAIN_ID
+          options.chainId
         );
       }
 
@@ -221,6 +225,7 @@ function setupUniswapXV2() {
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
     .option('--quote-id [quoteId]', 'add quote id to order')
+    .option('-c, --chain-id [chainId]', 'chain id', '1')
     .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
@@ -237,13 +242,20 @@ function setupUniswapXV2() {
       } else if (options.privateKey) {
         ({ signature } = await signV2Order(
           serializedOrder,
-          new Wallet(options.privateKey)
+          new Wallet(options.privateKey),
+          options.chainId
         ));
       } else {
         console.error('Either signature or private key is required');
         process.exit(1);
       }
-      await submitV2Order(config, serializedOrder, signature, quoteId);
+      await submitV2Order(
+        config,
+        serializedOrder,
+        signature,
+        options.chainId,
+        quoteId
+      );
     });
 
   program.addCommand(v2Command);

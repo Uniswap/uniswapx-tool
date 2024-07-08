@@ -5,7 +5,7 @@ import {
 } from '@uniswap/uniswapx-sdk';
 import axios from 'axios';
 
-import { CHAIN_ID, Config } from './config';
+import { Config, MAINNET_CHAINID } from './config';
 
 enum OrderType {
   DUTCH_V1 = 'DUTCH_LIMIT',
@@ -43,6 +43,7 @@ export type QuoteRequestType = {
     readonly exclusivePeriodSecs?: number;
     readonly auctionPeriodSecs?: number;
     readonly useSyntheticQuotes?: boolean;
+    readonly forceOpenOrders?: boolean;
   }[];
 };
 
@@ -59,11 +60,15 @@ export async function quoteV1Order(
   params: QuoteParams,
   config: Config
 ): Promise<{ readonly order: DutchOrder; readonly quoteId: string }> {
-  const payload = buildQuoteRequest(params, OrderType.DUTCH_V1);
+  const payload = buildQuoteRequest(
+    params,
+    OrderType.DUTCH_V1,
+    MAINNET_CHAINID
+  );
   const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
 
-  const order = DutchOrder.parse(responseData.encodedOrder, CHAIN_ID);
+  const order = DutchOrder.parse(responseData.encodedOrder, MAINNET_CHAINID);
   const builder = DutchOrderBuilder.fromOrder(order);
   const startTime =
     Math.floor(Date.now() / 1000) + responseData.startTimeBufferSecs;
@@ -83,13 +88,20 @@ export async function quoteV1Order(
 // returns encoded order
 export async function quoteV2Order(
   params: QuoteParams,
-  config: Config
+  config: Config,
+  chainId: number = MAINNET_CHAINID,
+  forceOpenOrders = false
 ): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
-  const payload = buildQuoteRequest(params, OrderType.DUTCH_V2);
+  const payload = buildQuoteRequest(
+    params,
+    OrderType.DUTCH_V2,
+    chainId,
+    forceOpenOrders
+  );
   const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
 
-  const order = UnsignedV2DutchOrder.parse(responseData.encodedOrder, CHAIN_ID);
+  const order = UnsignedV2DutchOrder.parse(responseData.encodedOrder, chainId);
 
   return {
     order,
@@ -99,12 +111,14 @@ export async function quoteV2Order(
 
 function buildQuoteRequest(
   params: QuoteParams,
-  orderType: OrderType
+  orderType: OrderType,
+  chainId: number,
+  forceOpenOrders = false
 ): QuoteRequestType {
   return {
-    tokenInChainId: CHAIN_ID,
+    tokenInChainId: chainId,
     tokenIn: params.tokenIn,
-    tokenOutChainId: CHAIN_ID,
+    tokenOutChainId: chainId,
     tokenOut: params.tokenOut,
     amount: params.amount,
     type:
@@ -114,6 +128,7 @@ function buildQuoteRequest(
         routingType: orderType,
         swapper: params.swapper,
         recipient: params.swapper,
+        forceOpenOrders,
       },
     ],
   };
