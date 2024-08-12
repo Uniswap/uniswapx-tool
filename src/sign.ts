@@ -1,6 +1,7 @@
 import {
   DutchOrder,
   UniswapXOrder,
+  UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
 } from '@uniswap/uniswapx-sdk';
 import { Wallet } from 'ethers';
@@ -30,6 +31,22 @@ export async function signV2Order(
   readonly signature: string;
 }> {
   const order = UnsignedV2DutchOrder.parse(encodedOrder, chainId);
+  const signature = await signOrder(order, wallet);
+  const serializedOrder = order.serialize();
+  const hash = order.hash();
+  return { serializedOrder, hash, signature };
+}
+
+export async function signPriorityOrder(
+  encodedOrder: string,
+  wallet: Wallet,
+  chainId: number
+): Promise<{
+  readonly serializedOrder: string;
+  readonly hash: string;
+  readonly signature: string;
+}> {
+  const order = UnsignedPriorityOrder.parse(encodedOrder, chainId);
   const signature = await signOrder(order, wallet);
   const serializedOrder = order.serialize();
   const hash = order.hash();
