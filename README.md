@@ -154,6 +154,7 @@ Options:
   --type <type>          Trade Type (choices: "exactIn", "exactOut", default: "exactIn")
   --serialize            Return serialized order (default: false)
   --cosigner [cosigner]  Cosigner
+  --chain-id <chainId>   ChainId
   -h, --help             display help for command
 ```
 
@@ -224,3 +225,98 @@ Simple way to create, sign and submit an order all at once
 ```sh
 uniswapx v2 quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --serialize | xargs uniswapx v2 submit --random-qid --private-key <privateKey>
 ```
+
+
+# UniswapX V3
+
+## Quote
+
+Create UniswapX V3 orders using live quotes
+
+```sh
+> uniswapx v3 quote -h
+Usage: uniswapx v3 quote [options]
+
+Quote a UniswapX V3 order
+
+Options:
+  --tokenIn <tokenIn>    Token In
+  --tokenOut <tokenOut>  Token Out
+  --amount <amount>      Amount In Start
+  --swapper <swapper>    Swapper
+  --type <type>          Trade Type (choices: "exactIn", "exactOut", default: "exactIn")
+  --serialize            Return serialized order (default: false)
+  --cosigner [cosigner]  Cosigner
+  --chain-id <chainId>   ChainId
+  -h, --help             display help for command
+```
+
+```
+❯ uniswapx v3 quote --tokenIn <tIn> --tokenOut <tOut> --amount <amount> --swapper <swapper> --exclusive-filler <filler>
+
+{
+  chainId: 42161,
+  permit2Address: ...,
+  reactor: ...,
+  swapper: ...,
+  nonce: ...,
+  deadline: ...,
+  additionalValidationContract: ...,
+  additionalValidationData: ...,
+  input: {
+    token: ...,
+    startAmount: ...,
+    endAmount: ...
+  },
+  outputs: [
+    {
+      token: ...,
+      startAmount: ...,
+      endAmount: ...,
+      recipient: ...
+    }
+  ],
+  cosigner: ...,
+  quoteId: ...
+}
+```
+
+## Submit
+
+Submits a UniswapX V3 order, signing it as well if private key given
+
+Note: the address of the private key must:
+
+- match the swapper address of the order
+- have already approved the input token(s) to permit2
+
+```
+> uniswapx V3 submit -h
+Usage: uniswapx V3 submit [options] <serializedOrder>
+
+Submit a UniswapX V3 order
+
+Arguments:
+  serializedOrder             serialized order
+
+Options:
+  --signature [signature]               signature
+  --private-key [privateKey]            private key
+  --quote-id [quoteId] (optional)       add quote-id to order submission body
+  --random-qid (optional)               add random quote-id to order submission body
+  --chain-id <chainId>                  ChainId
+  -h, --help                  display help for command
+
+Global Options:
+  -V, --version               output the version number
+  --env <env>                 Environment (choices: "beta", "prod", default: "beta")
+```
+
+## Simple order creation
+
+Simple way to create, sign and submit an order all at once
+
+```sh
+uniswapx V3 quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --serialize | xargs uniswapx V3 submit --random-qid --private-key <privateKey>
+```
+
