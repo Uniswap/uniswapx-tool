@@ -3,7 +3,8 @@ const PROD_UNISWAP_API_URL = 'https://api.uniswap.org';
 
 export enum ChainId {
   Mainnet = 1,
-  Arbitrum = 42161
+  Arbitrum = 42161,
+  Base = 8453,
 }
 
 export type Config = {

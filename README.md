@@ -133,7 +133,6 @@ Simple way to create, sign and submit an order all at once
 uniswapx v1 quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --exclusive-filler <exclusiveFiller> --serialize | xargs uniswapx v1 submit --random-qid --private-key <privateKey>
 ```
 
-
 # UniswapX V2
 
 ## Quote
@@ -266,13 +265,13 @@ Options:
   input: {
     token: ...,
     startAmount: ...,
-    endAmount: ...
+    curve: ...
   },
   outputs: [
     {
       token: ...,
       startAmount: ...,
-      endAmount: ...,
+      curve: ...,
       recipient: ...
     }
   ],
@@ -320,3 +319,95 @@ Simple way to create, sign and submit an order all at once
 uniswapx V3 quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --serialize | xargs uniswapx V3 submit --random-qid --private-key <privateKey>
 ```
 
+# UniswapX Priority
+
+## Quote
+
+Create UniswapX priority orders using live quotes
+
+```sh
+> uniswapx priority quote -h
+Usage: uniswapx priority quote [options]
+
+Quote a UniswapX priority order
+
+Options:
+  --tokenIn <tokenIn>    Token In
+  --tokenOut <tokenOut>  Token Out
+  --amount <amount>      Amount In Start
+  --swapper <swapper>    Swapper
+  --type <type>          Trade Type (choices: "exactIn", "exactOut", default: "exactIn")
+  --serialize            Return serialized order (default: false)
+  --cosigner [cosigner]  Cosigner
+  -h, --help             display help for command
+```
+
+```
+❯ uniswapx priority quote --tokenIn <tIn> --tokenOut <tOut> --amount <amount> --swapper <swapper>
+
+{
+  chainId: 1,
+  permit2Address: ...,
+  reactor: ...,
+  swapper: ...,
+  nonce: ...,
+  deadline: ...,
+  additionalValidationContract: ...,
+  additionalValidationData: ...,
+  cosigner: ...,
+  auctionStartBlock: ...,
+  baselinePriorityFeeWei: ...,
+  input: {
+    token: ...,
+    amount: ...,
+    mpsPerPriorityFeeWei: ...
+  },
+  outputs: [
+    {
+      token: ...,
+      amount: ...,
+      mpsPerPriorityFeeWei: ...,
+      recipient: ...
+    }
+  ],
+  quoteId: ...
+}
+```
+
+## Submit
+
+Submits a UniswapX priority order, signing it as well if private key given
+
+Note: the address of the private key must:
+
+- match the swapper address of the order
+- have already approved the input token(s) to permit2
+
+```
+> uniswapx priority submit -h
+Usage: uniswapx priority submit [options] <serializedOrder>
+
+Submit a UniswapX priority order
+
+Arguments:
+  serializedOrder             serialized order
+
+Options:
+  --signature [signature]               signature
+  --private-key [privateKey]            private key
+  --quote-id [quoteId] (optional)       add quote-id to order submission body
+  --random-qid (optional)               add random quote-id to order submission body
+  -h, --help                  display help for command
+
+Global Options:
+  -V, --version               output the version number
+  --env <env>                 Environment (choices: "beta", "prod", default: "beta")
+```
+
+## Simple order creation
+
+Simple way to create, sign and submit an order all at once
+
+```sh
+uniswapx priority quote --tokenIn <tokenIn> --tokenOut <tokenOut> --amount <amountIn> --swapper <swapper> --serialize | xargs uniswapx priority submit --random-qid --private-key <privateKey>
+```
