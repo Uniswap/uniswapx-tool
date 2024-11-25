@@ -158,7 +158,9 @@ export async function quoteV3Order(
     order,
     quoteId: qid,
   };
-} export async function quotePriorityOrder(
+}
+
+export async function quotePriorityOrder(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Base,
