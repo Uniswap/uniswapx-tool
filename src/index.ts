@@ -195,7 +195,10 @@ function setupUniswapXV2() {
         },
         config,
         options.chainId,
-        options.openOrder
+        {
+          useSyntheticQuotes: options.openOrder,
+          forceOpenOrders: options.openOrder,
+        }
       );
 
       // rebuild with overrides
@@ -281,7 +284,7 @@ function setupUniswapXV3() {
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
-    .option('--openOrder', 'Force Open Order', false)
+    .option('--openOrder', 'Force Open Order', true)
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -296,7 +299,10 @@ function setupUniswapXV3() {
         },
         config,
         options.chainId,
-        options.openOrder
+        {
+          useSyntheticQuotes: options.openOrder,
+          forceOpenOrders: options.openOrder,
+        }
       );
 
       // rebuild with overrides

@@ -5,10 +5,8 @@ CLI tool for UniswapX
 # Installation
 
 ```
-> yarn
-> yarn build
-> npm i -g .
-> uniswapx -h
+yarn && yarn build && npm i -g .
+uniswapx -h
 ```
 
 # Usage

@@ -41,8 +41,9 @@ export type DutchQuoteRequestConfigType = {
   readonly useSyntheticQuotes?: boolean;
 };
 
-export type DutchV2QuoteRequestConfigType = DutchQuoteRequestConfigType & {
+export type DutchV2V3QuoteRequestConfigType = DutchQuoteRequestConfigType & {
   readonly forceOpenOrders?: boolean;
+  readonly useSyntheticQuotes?: boolean;
 };
 
 export type PriorityQuoteRequestConfigType = {
@@ -54,7 +55,10 @@ export type PriorityQuoteRequestConfigType = {
   readonly baselinePriorityFeeWei?: number;
 }
 
-export type QuoteRequestConfigType = DutchQuoteRequestConfigType | DutchV2QuoteRequestConfigType | PriorityQuoteRequestConfigType;
+export type QuoteRequestConfigType =
+  | DutchQuoteRequestConfigType
+  | DutchV2V3QuoteRequestConfigType
+  | PriorityQuoteRequestConfigType;
 
 export type QuoteRequestType = {
   readonly tokenInChainId: number;
@@ -113,7 +117,7 @@ export async function quoteV2Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Mainnet,
-  overrides: Partial<DutchV2QuoteRequestConfigType> = {
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
     forceOpenOrders: false,
   }
 ): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
@@ -139,8 +143,9 @@ export async function quoteV3Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Arbitrum,
-  overrides: Partial<DutchV2QuoteRequestConfigType> = {
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
     forceOpenOrders: true,
+    useSyntheticQuotes: true,
   }
 ): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(
