@@ -260,10 +260,14 @@ Options:
   deadline: ...,
   additionalValidationContract: ...,
   additionalValidationData: ...,
+  cosigner: ...,
+  startingBaseFee: ...,
   input: {
     token: ...,
     startAmount: ...,
-    curve: ...
+    curve: ...,
+    maxAmount: ...,
+    adjustmentPerGweiBaseFee: ...
   },
   outputs: [
     {
@@ -271,6 +275,8 @@ Options:
       startAmount: ...,
       curve: ...,
       recipient: ...
+      minAmount: ...,
+      adjustmentPerGweiBaseFee: ...
     }
   ],
   cosigner: ...,
