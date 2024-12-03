@@ -44,6 +44,7 @@ export type DutchQuoteRequestConfigType = {
 export type DutchV2V3QuoteRequestConfigType = DutchQuoteRequestConfigType & {
   readonly forceOpenOrders?: boolean;
   readonly useSyntheticQuotes?: boolean;
+  readonly deadlineBufferSecs?: number;
 };
 
 export type PriorityQuoteRequestConfigType = {

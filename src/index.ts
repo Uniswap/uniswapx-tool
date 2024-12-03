@@ -285,6 +285,7 @@ function setupUniswapXV3() {
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
     .option('--openOrder', 'Force Open Order', true)
+    .option('--deadlineBufferSecs [deadlineBufferSecs]', 'Deadline Buffer Seconds')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -302,6 +303,7 @@ function setupUniswapXV3() {
         {
           useSyntheticQuotes: options.openOrder,
           forceOpenOrders: options.openOrder,
+          deadlineBufferSecs: options.deadlineBufferSecs,
         }
       );
 
