@@ -3,14 +3,16 @@ import {
   DutchOrderBuilder,
   UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
+  UnsignedV3DutchOrder,
 } from '@uniswap/uniswapx-sdk';
 import axios from 'axios';
 
-import { BASE_CHAINID, Config, MAINNET_CHAINID } from './config';
+import { ChainId, Config } from './config';
 
 enum OrderType {
   DUTCH_V1 = 'DUTCH_LIMIT',
   DUTCH_V2 = 'DUTCH_V2',
+  DUTCH_V3 = 'DUTCH_V3',
   PRIORITY = 'PRIORITY',
 }
 
@@ -39,8 +41,10 @@ export type DutchQuoteRequestConfigType = {
   readonly useSyntheticQuotes?: boolean;
 };
 
-export type DutchV2QuoteRequestConfigType = DutchQuoteRequestConfigType & {
+export type DutchV2V3QuoteRequestConfigType = DutchQuoteRequestConfigType & {
   readonly forceOpenOrders?: boolean;
+  readonly useSyntheticQuotes?: boolean;
+  readonly deadlineBufferSecs?: number;
 };
 
 export type PriorityQuoteRequestConfigType = {
@@ -52,7 +56,10 @@ export type PriorityQuoteRequestConfigType = {
   readonly baselinePriorityFeeWei?: number;
 }
 
-export type QuoteRequestConfigType = DutchQuoteRequestConfigType | DutchV2QuoteRequestConfigType | PriorityQuoteRequestConfigType;
+export type QuoteRequestConfigType =
+  | DutchQuoteRequestConfigType
+  | DutchV2V3QuoteRequestConfigType
+  | PriorityQuoteRequestConfigType;
 
 export type QuoteRequestType = {
   readonly tokenInChainId: number;
@@ -83,13 +90,13 @@ export async function quoteV1Order(
   const payload = buildQuoteRequest(
     params,
     OrderType.DUTCH_V1,
-    MAINNET_CHAINID,
+    ChainId.Mainnet,
     overrides
   );
   const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
 
-  const order = DutchOrder.parse(responseData.encodedOrder, MAINNET_CHAINID);
+  const order = DutchOrder.parse(responseData.encodedOrder, ChainId.Mainnet);
   const builder = DutchOrderBuilder.fromOrder(order);
   const startTime =
     Math.floor(Date.now() / 1000) + responseData.startTimeBufferSecs;
@@ -110,8 +117,8 @@ export async function quoteV1Order(
 export async function quoteV2Order(
   params: QuoteParams,
   config: Config,
-  chainId: number = MAINNET_CHAINID,
-  overrides: Partial<DutchV2QuoteRequestConfigType> = {
+  chainId: number = ChainId.Mainnet,
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
     forceOpenOrders: false,
   }
 ): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
@@ -132,10 +139,37 @@ export async function quoteV2Order(
   };
 }
 
+// returns encoded order
+export async function quoteV3Order(
+  params: QuoteParams,
+  config: Config,
+  chainId: number = ChainId.Arbitrum,
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
+    forceOpenOrders: true,
+    useSyntheticQuotes: true,
+  }
+): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
+  const payload = buildQuoteRequest(
+    params,
+    OrderType.DUTCH_V3,
+    chainId,
+    overrides
+  );
+  const responseData = await makeQuoteRequest(payload, config);
+  const qid = responseData.quoteId;
+
+  const order = UnsignedV3DutchOrder.parse(responseData.encodedOrder, chainId);
+
+  return {
+    order,
+    quoteId: qid,
+  };
+}
+
 export async function quotePriorityOrder(
   params: QuoteParams,
   config: Config,
-  chainId: number = BASE_CHAINID,
+  chainId: number = ChainId.Base,
   overrides?: Partial<PriorityQuoteRequestConfigType>
 ): Promise<{ readonly order: UnsignedPriorityOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(
@@ -154,7 +188,6 @@ export async function quotePriorityOrder(
     quoteId: qid,
   };
 }
-
 
 function buildQuoteRequest(
   params: QuoteParams,

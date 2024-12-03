@@ -1,8 +1,11 @@
 const BETA_UNISWAP_API_URL = 'https://beta.api.uniswap.org';
 const PROD_UNISWAP_API_URL = 'https://api.uniswap.org';
 
-export const MAINNET_CHAINID = 1;
-export const BASE_CHAINID = 8453;
+export enum ChainId {
+  Mainnet = 1,
+  Arbitrum = 42161,
+  Base = 8453,
+}
 
 export type Config = {
   readonly uniswapAPIUrl: string;

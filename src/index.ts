@@ -1,13 +1,13 @@
-import { DutchOrder, UnsignedPriorityOrder, UnsignedV2DutchOrder } from '@uniswap/uniswapx-sdk';
+import { DutchOrder, UnsignedV2DutchOrder, UnsignedV3DutchOrder, UnsignedPriorityOrder } from '@uniswap/uniswapx-sdk';
 import { Command, Option, program } from 'commander';
 import { Wallet } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
 
 import { buildOrder } from './build';
-import { getConfig, MAINNET_CHAINID } from './config';
-import { quotePriorityOrder, quoteV1Order, quoteV2Order } from './quote';
-import { signPriorityOrder, signV1Order, signV2Order } from './sign';
-import { submitPriorityOrder, submitV1Order, submitV2Order } from './submit';
+import { ChainId, getConfig } from './config';
+import { quotePriorityOrder, quoteV1Order, quoteV2Order, quoteV3Order } from './quote';
+import { signPriorityOrder, signV1Order, signV2Order, signV3Order } from './sign';
+import { submitPriorityOrder, submitV1Order, submitV2Order, submitV3Order } from './submit';
 
 function setupProgram() {
   program.configureHelp({
@@ -25,6 +25,7 @@ function setupProgram() {
 
   setupUniswapXV1();
   setupUniswapXV2();
+  setupUniswapXV3();
   setupPriority();
 }
 
@@ -75,7 +76,7 @@ function setupUniswapXV1() {
               exclusivityOverrideBps: options.exclusivityOverrideBps,
             }),
           }),
-          MAINNET_CHAINID
+          ChainId.Mainnet
         );
       }
 
@@ -178,7 +179,7 @@ function setupUniswapXV2() {
     )
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
-    .option('-c, --chain-id [chainId]', 'chain id', '1')
+    .option('-c, --chain-id [chainId]', 'chain id', ChainId.Mainnet.toString())
     .option('--openOrder', 'Force Open Order', false)
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
@@ -194,7 +195,10 @@ function setupUniswapXV2() {
         },
         config,
         options.chainId,
-        options.openOrder
+        {
+          useSyntheticQuotes: options.openOrder,
+          forceOpenOrders: options.openOrder,
+        }
       );
 
       // rebuild with overrides
@@ -226,7 +230,7 @@ function setupUniswapXV2() {
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
     .option('--quote-id [quoteId]', 'add quote id to order')
-    .option('-c, --chain-id [chainId]', 'chain id', '1')
+    .option('-c, --chain-id [chainId]', 'chain id', ChainId.Mainnet.toString())
     .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
@@ -260,6 +264,112 @@ function setupUniswapXV2() {
     });
 
   program.addCommand(v2Command);
+}
+
+function setupUniswapXV3() {
+  const v3Command = new Command('v3');
+
+  v3Command
+    .command('quote')
+    .description('Quote a UniswapX V3 order')
+    .requiredOption('--tokenIn <tokenIn>', 'Token In')
+    .requiredOption('--tokenOut <tokenOut>', 'Token Out')
+    .requiredOption('--amount <amount>', 'Amount In Start')
+    .requiredOption('--swapper <swapper>', 'Swapper')
+    .addOption(
+      new Option('--type <type>', 'Trade Type')
+        .choices(['exactIn', 'exactOut'])
+        .default('exactIn')
+    )
+    .option('--serialize', 'Return serialized order', false)
+    .option('--cosigner [cosigner]', 'Cosigner')
+    .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
+    .option('--openOrder', 'Force Open Order', true)
+    .option('--deadlineBufferSecs [deadlineBufferSecs]', 'Deadline Buffer Seconds')
+    .action(async (options) => {
+      const globalOpts = program.optsWithGlobals();
+      const config = getConfig(globalOpts.env);
+      // eslint-disable-next-line prefer-const
+      let { order, quoteId } = await quoteV3Order(
+        {
+          tokenIn: options.tokenIn,
+          tokenOut: options.tokenOut,
+          amount: options.amount,
+          swapper: options.swapper,
+          type: options.type,
+        },
+        config,
+        options.chainId,
+        {
+          useSyntheticQuotes: options.openOrder,
+          forceOpenOrders: options.openOrder,
+          deadlineBufferSecs: options.deadlineBufferSecs,
+        }
+      );
+
+      // rebuild with overrides
+      if (options.cosigner) {
+        order = UnsignedV3DutchOrder.fromJSON(
+          Object.assign(order.toJSON(), {
+            ...(options.cosigner && {
+              cosigner: options.cosigner,
+            }),
+          }),
+          options.chainId
+        );
+      }
+
+      if (options.serialize) {
+        console.log(order.serialize());
+      } else {
+        console.log({
+          ...order.toJSON(),
+          quoteId: quoteId,
+        });
+      }
+    });
+
+  v3Command
+    .command('submit')
+    .description('Submit a UniswapX V3 order')
+    .argument('<serializedOrder>', 'serialized order')
+    .option('--signature [signature]', 'signature')
+    .option('--private-key [privateKey]', 'private key')
+    .option('--quote-id [quoteId]', 'add quote id to order')
+    .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
+    .option('--random-qid', 'add random quote id to order')
+    .action(async (serializedOrder, options) => {
+      const globalOpts = program.optsWithGlobals();
+      const config = getConfig(globalOpts.env);
+      let signature: string;
+      let quoteId: string;
+      if (options.quoteId) {
+        quoteId = options.quoteId;
+      } else if (options.randomQid) {
+        quoteId = uuidv4();
+      }
+      if (options.signature) {
+        signature = options.signature;
+      } else if (options.privateKey) {
+        ({ signature } = await signV3Order(
+          serializedOrder,
+          new Wallet(options.privateKey),
+          options.chainId
+        ));
+      } else {
+        console.error('Either signature or private key is required');
+        process.exit(1);
+      }
+      await submitV3Order(
+        config,
+        serializedOrder,
+        signature,
+        options.chainId,
+        quoteId
+      );
+    });
+
+  program.addCommand(v3Command);
 }
 
 function setupPriority() {
