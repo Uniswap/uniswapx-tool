@@ -45,7 +45,6 @@ export type DutchV2V3QuoteRequestConfigType = DutchQuoteRequestConfigType & {
   readonly forceOpenOrders?: boolean;
   readonly useSyntheticQuotes?: boolean;
   readonly deadlineBufferSecs?: number;
-  readonly slippageTolerance?: string;
 };
 
 export type PriorityQuoteRequestConfigType = {
@@ -148,14 +147,15 @@ export async function quoteV3Order(
   overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
     forceOpenOrders: true,
     useSyntheticQuotes: true,
-    slippageTolerance: undefined,
-  }
+  },
+  slippageTolerance?: string
 ): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(
     params,
     OrderType.DUTCH_V3,
     chainId,
-    overrides
+    overrides,
+    slippageTolerance
   );
   const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
@@ -172,13 +172,15 @@ export async function quotePriorityOrder(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Base,
-  overrides?: Partial<PriorityQuoteRequestConfigType>
+  overrides?: Partial<PriorityQuoteRequestConfigType>,
+  slippageTolerance?: string
 ): Promise<{ readonly order: UnsignedPriorityOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(
     params,
     OrderType.PRIORITY,
     chainId,
-    overrides
+    overrides,
+    slippageTolerance
   );
   const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
@@ -195,7 +197,8 @@ function buildQuoteRequest(
   params: QuoteParams,
   orderType: OrderType,
   chainId: number,
-  overrides?: Partial<QuoteRequestConfigType>
+  overrides?: Partial<QuoteRequestConfigType>,
+  slippageTolerance?: string
 ): QuoteRequestType {
   return {
     tokenInChainId: chainId,
@@ -203,6 +206,7 @@ function buildQuoteRequest(
     tokenOutChainId: chainId,
     tokenOut: params.tokenOut,
     amount: params.amount,
+    slippageTolerance: slippageTolerance ?? undefined,
     type:
       params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
     configs: [
