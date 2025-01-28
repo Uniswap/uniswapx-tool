@@ -286,6 +286,7 @@ function setupUniswapXV3() {
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
     .option('--openOrder', 'Force Open Order', true)
     .option('--deadlineBufferSecs [deadlineBufferSecs]', 'Deadline Buffer Seconds')
+    .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -304,7 +305,8 @@ function setupUniswapXV3() {
           useSyntheticQuotes: options.openOrder,
           forceOpenOrders: options.openOrder,
           deadlineBufferSecs: options.deadlineBufferSecs,
-        }
+        },
+        options.slippageTolerance
       );
 
       // rebuild with overrides
@@ -390,6 +392,7 @@ function setupPriority() {
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', '8453')
+    .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
@@ -404,7 +407,8 @@ function setupPriority() {
         },
         config,
         options.chainId,
-        options.openOrder
+        {},
+        options.slippageTolerance
       );
 
       // rebuild with overrides

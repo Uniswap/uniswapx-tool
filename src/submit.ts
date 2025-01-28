@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { ChainId, Config } from './config';
+import { OrderType } from '@uniswap/uniswapx-sdk';
 
 export async function submitV1Order(
   config: Config,
@@ -118,12 +119,14 @@ export async function submitPriorityOrder(
   chainId: number = ChainId.Base,
   quoteId?: string
 ) {
+  console.log('submitPriorityOrder', encodedOrder, signature, chainId, quoteId);
   const url = `${config.uniswapAPIUrl}/v2/order`;
   const payload = {
     encodedOrder,
     signature,
     chainId,
     quoteId: quoteId,
+    orderType: OrderType.Priority,
   };
   try {
     const response = await axios.post(url, payload, {
