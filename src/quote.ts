@@ -45,6 +45,7 @@ export type DutchV2V3QuoteRequestConfigType = DutchQuoteRequestConfigType & {
   readonly forceOpenOrders?: boolean;
   readonly useSyntheticQuotes?: boolean;
   readonly deadlineBufferSecs?: number;
+  readonly slippageTolerance?: string;
 };
 
 export type PriorityQuoteRequestConfigType = {
@@ -147,6 +148,7 @@ export async function quoteV3Order(
   overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
     forceOpenOrders: true,
     useSyntheticQuotes: true,
+    slippageTolerance: undefined,
   }
 ): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(

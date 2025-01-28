@@ -1059,10 +1059,10 @@
     ethers "^5.7.0"
     tiny-invariant "^1.1.0"
 
-"@uniswap/sdk-core@^5.0.0":
-  version "5.3.1"
-  resolved "https://registry.yarnpkg.com/@uniswap/sdk-core/-/sdk-core-5.3.1.tgz#22d753e9ef8666c2f3b4d9a89b9658d169be4ce8"
-  integrity sha512-XLJY8PcMZnKYBGLABJnLXcr3EgWql3mmnmpHyV1/MmEh9pLJLHYz4HLwVHb8pGDCqpOFX0e+Ei44/qhC7Q5Dsg==
+"@uniswap/sdk-core@^7.5.0":
+  version "7.5.0"
+  resolved "https://registry.yarnpkg.com/@uniswap/sdk-core/-/sdk-core-7.5.0.tgz#54165c9268df0e56a322a581876fed4774e1ea70"
+  integrity sha512-4eMbQTu+pEO6CGFG+G9M4ACFPephhfNPpRH40+GGgceHzs73OwQ+5v6Fw5e2JGxr/DEJrS/KcJ2Xjmg/QQ3D6Q==
   dependencies:
     "@ethersproject/address" "^5.0.2"
     "@ethersproject/bytes" "^5.7.0"
@@ -1074,15 +1074,15 @@
     tiny-invariant "^1.1.0"
     toformat "^2.0.0"
 
-"@uniswap/uniswapx-sdk@^2.1.0-beta.21":
-  version "2.1.0-beta.21"
-  resolved "https://registry.yarnpkg.com/@uniswap/uniswapx-sdk/-/uniswapx-sdk-2.1.0-beta.21.tgz#01d10e2adae46f8d2eb3ca16a2fe52d0ff4e2d5f"
-  integrity sha512-RgSh96uxbnFa94FUixh/warReeskXKo35xTNwKkNYZ4YJl6m46a4hFppBAHNI1ao/wGeL/J+5+vw5pB8bSnBfw==
+"@uniswap/uniswapx-sdk@^3.0.0-beta.3":
+  version "3.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@uniswap/uniswapx-sdk/-/uniswapx-sdk-3.0.0-beta.3.tgz#eb827666bfc9b704eb75dcb3e3c0460d2ef44fc5"
+  integrity sha512-5j54ZRfDMBQnpG4m95hm8/TswfVh5/Ca9jjIhjLyZkFAquhh+y71IBa5nb2HoIgBSiOcMK3bncSwhziXxtkzNQ==
   dependencies:
     "@ethersproject/bytes" "^5.7.0"
     "@ethersproject/providers" "^5.7.0"
     "@uniswap/permit2-sdk" "^1.2.1"
-    "@uniswap/sdk-core" "^5.0.0"
+    "@uniswap/sdk-core" "^7.5.0"
     ethers "^5.7.0"
 
 JSONStream@^1.0.4:
