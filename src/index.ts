@@ -107,6 +107,7 @@ function setupUniswapXV1() {
       'Exclusivity Override Bps'
     )
     .option('--add-fee-output', 'Add an additional output', false)
+    .option('--deadlineBufferSecs [deadlineBufferSecs]', 'Deadline buffer in seconds from now')
     .action(async (options) => {
       const order = buildOrder({
         tokenIn: options.tokenIn,
@@ -119,6 +120,7 @@ function setupUniswapXV1() {
         exclusiveFiller: options.exclusiveFiller,
         exclusivityOverrideBps: options.exclusivityOverrideBps,
         addFeeOutput: options.addFeeOutput,
+        deadline: options.deadlineBufferSecs ? Math.floor(Date.now() / 1000) + parseInt(options.deadlineBufferSecs) : undefined,
       });
       if (options.serialize) {
         console.log(order.serialize());
