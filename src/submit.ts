@@ -9,7 +9,7 @@ export async function submitV1Order(
   signature: string,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/order`;
+  const url = `${config.uniswapAPIUrl}/v2/limit-order`;
   const payload = {
     encodedOrder,
     signature,

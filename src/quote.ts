@@ -224,21 +224,26 @@ async function makeQuoteRequest(
   payload: QuoteRequestType,
   config: Config
 ): Promise<QuoteResponse> {
-  const response = await axios.post(
-    `${config.uniswapAPIUrl}/v2/quote`,
-    payload,
-    {
-      headers: {
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        referrer: 'https://app.uniswap.org/',
-        origin: 'https://app.uniswap.org/',
-      },
+  try {
+    const response = await axios.post(
+      `${config.uniswapAPIUrl}/v2/quote`,
+      payload,
+      {
+        headers: {
+          accept: 'application/json, text/plain, */*',
+          'content-type': 'application/json',
+          referrer: 'https://app.uniswap.org/',
+          origin: 'https://app.uniswap.org/',
+        },
+      }
+    );
+    if (!response.data) {
+      console.error('No quote available');
+      process.exit(0);
     }
-  );
-  if (!response.data) {
-    console.error('No quote available');
-    process.exit(1);
+    return response.data.quote;
+  } catch (error) {
+    console.error(error.message);
+    process.exit(0);
   }
-  return response.data.quote;
 }
