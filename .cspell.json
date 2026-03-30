@@ -3,6 +3,7 @@
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/master/cspell.schema.json",
   "language": "en",
   "words": [
+    "Arbitrum",
     "bitjson",
     "bitauth",
     "cimg",
@@ -21,7 +22,11 @@
     "sandboxed",
     "transpiled",
     "typedoc",
-    "untracked"
+    "Unichain",
+    "uniswapx",
+    "UNISWAPX",
+    "untracked",
+    "uuidv"
   ],
   "flagWords": [],
   "ignorePaths": [
