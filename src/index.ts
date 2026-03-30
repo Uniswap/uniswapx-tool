@@ -58,7 +58,7 @@ function setupProgram() {
     .addOption(
       new Option('--env <env>', 'Environment')
         .choices(['beta', 'prod'])
-        .default('prod')
+        .default('beta')
     )
     .option(
       '--api-key <apiKey>',
