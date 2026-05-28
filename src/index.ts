@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { DutchOrder, UnsignedV2DutchOrder, UnsignedV3DutchOrder, UnsignedPriorityOrder } from '@uniswap/uniswapx-sdk';
 import { Command, Option, program } from 'commander';
 import { Wallet } from 'ethers';
@@ -140,6 +141,7 @@ function setupUniswapXV1() {
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
+      const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
       if (options.quoteId) {
@@ -149,10 +151,10 @@ function setupUniswapXV1() {
       }
       if (options.signature) {
         signature = options.signature;
-      } else if (options.privateKey) {
+      } else if (privateKey) {
         ({ signature } = await signV1Order(
           serializedOrder,
-          new Wallet(options.privateKey)
+          new Wallet(privateKey)
         ));
       } else {
         console.error('Either signature or private key is required');
@@ -237,6 +239,7 @@ function setupUniswapXV2() {
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
+      const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
       if (options.quoteId) {
@@ -246,10 +249,10 @@ function setupUniswapXV2() {
       }
       if (options.signature) {
         signature = options.signature;
-      } else if (options.privateKey) {
+      } else if (privateKey) {
         ({ signature } = await signV2Order(
           serializedOrder,
-          new Wallet(options.privateKey),
+          new Wallet(privateKey),
           options.chainId
         ));
       } else {
@@ -345,6 +348,7 @@ function setupUniswapXV3() {
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
+      const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
       if (options.quoteId) {
@@ -354,10 +358,10 @@ function setupUniswapXV3() {
       }
       if (options.signature) {
         signature = options.signature;
-      } else if (options.privateKey) {
+      } else if (privateKey) {
         ({ signature } = await signV3Order(
           serializedOrder,
-          new Wallet(options.privateKey),
+          new Wallet(privateKey),
           options.chainId
         ));
       } else {
@@ -447,6 +451,7 @@ function setupPriority() {
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env);
+      const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
       if (options.quoteId) {
@@ -456,10 +461,10 @@ function setupPriority() {
       }
       if (options.signature) {
         signature = options.signature;
-      } else if (options.privateKey) {
+      } else if (privateKey) {
         ({ signature } = await signPriorityOrder(
           serializedOrder,
-          new Wallet(options.privateKey),
+          new Wallet(privateKey),
           options.chainId
         ));
       } else {

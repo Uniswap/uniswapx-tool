@@ -3,6 +3,13 @@ import axios from 'axios';
 import { ChainId, Config } from './config';
 import { OrderType } from '@uniswap/uniswapx-sdk';
 
+function authHeaders(config: Config): Record<string, string> {
+  return {
+    ...(config.apiKey && { 'x-api-key': config.apiKey }),
+    ...(config.isBeta && { 'x-beta-rfq': 'true' }),
+  };
+}
+
 export async function submitV1Order(
   config: Config,
   encodedOrder: string,
@@ -22,6 +29,7 @@ export async function submitV1Order(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 201) {
@@ -58,6 +66,7 @@ export async function submitV2Order(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 200) {
@@ -97,6 +106,7 @@ export async function submitV3Order(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 200) {
@@ -134,6 +144,7 @@ export async function submitPriorityOrder(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 201) {

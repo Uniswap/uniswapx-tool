@@ -232,8 +232,10 @@ async function makeQuoteRequest(
         headers: {
           accept: 'application/json, text/plain, */*',
           'content-type': 'application/json',
-          referrer: 'https://app.uniswap.org/',
+          referer: 'https://app.uniswap.org/',
           origin: 'https://app.uniswap.org/',
+          ...(config.apiKey && { 'x-api-key': config.apiKey }),
+          ...(config.isBeta && { 'x-beta-rfq': 'true' }),
         },
       }
     );
@@ -243,7 +245,13 @@ async function makeQuoteRequest(
     }
     return response.data.quote;
   } catch (error) {
-    console.error(error.message);
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Headers sent:', error.config?.headers);
+      console.error('Response body:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error(error.message);
+    }
     process.exit(0);
   }
 }
