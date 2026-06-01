@@ -67,6 +67,7 @@ export type QuoteRequestType = {
   readonly tokenOutChainId: number;
   readonly tokenOut: string;
   readonly amount: string;
+  readonly swapper: string;
   readonly type: string;
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
@@ -206,6 +207,7 @@ function buildQuoteRequest(
     tokenOutChainId: chainId,
     tokenOut: params.tokenOut,
     amount: params.amount,
+    swapper: params.swapper,
     slippageTolerance: slippageTolerance ?? undefined,
     type:
       params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
@@ -226,7 +228,7 @@ async function makeQuoteRequest(
 ): Promise<QuoteResponse> {
   try {
     const response = await axios.post(
-      `${config.uniswapAPIUrl}/v2/quote`,
+      `${config.uniswapAPIUrl}/v1/quote`,
       payload,
       {
         headers: {
