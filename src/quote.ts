@@ -245,6 +245,11 @@ async function makeQuoteRequest(
       console.error('No quote available');
       process.exit(0);
     }
+    const expectedRouting = payload.configs[0].routingType;
+    if (response.data.routing !== expectedRouting) {
+      console.error(`Expected ${expectedRouting} quote but received ${response.data.routing}.`);
+      process.exit(0);
+    }
     return response.data.quote;
   } catch (error) {
     if (error.response) {
