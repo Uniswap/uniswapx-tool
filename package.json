@@ -112,5 +112,8 @@
   },
   "bin": {
     "uniswapx": "./bin/uniswapx"
+  },
+  "resolutions": {
+    "elliptic": "6.6.1"
   }
 }
