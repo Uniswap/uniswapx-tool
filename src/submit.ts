@@ -16,7 +16,7 @@ export async function submitV1Order(
   signature: string,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/limit-order`;
+  const url = `${config.submitApiUrl}/v2/limit-order`;
   const payload = {
     encodedOrder,
     signature,
@@ -50,7 +50,7 @@ export async function submitV2Order(
   chainId: number,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/rfq`;
+  const url = `${config.submitApiUrl}/v2/rfq`;
   const payload = {
     encodedInnerOrder,
     innerSig,
@@ -89,7 +89,7 @@ export async function submitV3Order(
   chainId: number,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/rfq`;
+  const url = `${config.submitApiUrl}/v2/rfq`;
   const payload = {
     encodedInnerOrder,
     innerSig,
@@ -130,7 +130,7 @@ export async function submitPriorityOrder(
   quoteId?: string
 ) {
   console.log('submitPriorityOrder', encodedOrder, signature, chainId, quoteId);
-  const url = `${config.uniswapAPIUrl}/v2/order`;
+  const url = `${config.submitApiUrl}/v2/order`;
   const payload = {
     encodedOrder,
     signature,
