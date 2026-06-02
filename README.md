@@ -18,7 +18,7 @@ UNISWAP_API_KEY=<your api key>
 UNISWAP_PRIVATE_KEY=<your private key>  # optional, can also pass --private-key at runtime
 ```
 
-`UNISWAP_API_KEY` is required for all requests. `UNISWAP_PRIVATE_KEY` is only needed for submit commands that sign the order — it can be omitted from `.env` and passed via `--private-key` instead.
+`UNISWAP_API_KEY` is required for all requests. The API key can be generated from <https://developers.uniswap.org/>. `UNISWAP_PRIVATE_KEY` is only needed for submit commands that sign the order — it can be omitted from `.env` and passed via `--private-key` instead.
 
 ## Usage
 

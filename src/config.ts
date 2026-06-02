@@ -21,6 +21,9 @@ export enum Env {
 
 export function getConfig(env: Env): Config {
   const apiKey = process.env.UNISWAP_API_KEY;
+  if (apiKey === undefined || apiKey.trim() === '') {
+    throw new Error('UNISWAP_API_KEY is not set');
+  }
   switch (env) {
     case Env.Beta:
       return {

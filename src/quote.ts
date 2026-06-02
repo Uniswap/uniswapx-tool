@@ -54,7 +54,7 @@ export type PriorityQuoteRequestConfigType = {
   readonly startTimeBufferSecs?: number;
   readonly mpsPerPriorityFeeWei?: number;
   readonly baselinePriorityFeeWei?: number;
-}
+};
 
 export type QuoteRequestConfigType =
   | DutchQuoteRequestConfigType
@@ -175,7 +175,10 @@ export async function quotePriorityOrder(
   chainId: number = ChainId.Base,
   overrides?: Partial<PriorityQuoteRequestConfigType>,
   slippageTolerance?: string
-): Promise<{ readonly order: UnsignedPriorityOrder; readonly quoteId: string }> {
+): Promise<{
+  readonly order: UnsignedPriorityOrder;
+  readonly quoteId: string;
+}> {
   const payload = buildQuoteRequest(
     params,
     OrderType.PRIORITY,
@@ -216,7 +219,7 @@ function buildQuoteRequest(
         routingType: orderType,
         swapper: params.swapper,
         recipient: params.swapper,
-        ...overrides
+        ...overrides,
       },
     ],
   };
@@ -247,7 +250,9 @@ async function makeQuoteRequest(
     }
     const expectedRouting = payload.configs[0].routingType;
     if (response.data.routing !== expectedRouting) {
-      console.error(`Expected ${expectedRouting} quote but received ${response.data.routing}.`);
+      console.error(
+        `Expected ${expectedRouting} quote but received ${response.data.routing}.`
+      );
       process.exit(0);
     }
     return response.data.quote;
@@ -255,7 +260,10 @@ async function makeQuoteRequest(
     if (error.response) {
       console.error('Status:', error.response.status);
       console.error('Headers sent:', error.config?.headers);
-      console.error('Response body:', JSON.stringify(error.response.data, null, 2));
+      console.error(
+        'Response body:',
+        JSON.stringify(error.response.data, null, 2)
+      );
     } else {
       console.error(error.message);
     }

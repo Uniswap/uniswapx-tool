@@ -1,14 +1,34 @@
 import 'dotenv/config';
-import { DutchOrder, UnsignedV2DutchOrder, UnsignedV3DutchOrder, UnsignedPriorityOrder } from '@uniswap/uniswapx-sdk';
+import {
+  DutchOrder,
+  UnsignedV2DutchOrder,
+  UnsignedV3DutchOrder,
+  UnsignedPriorityOrder,
+} from '@uniswap/uniswapx-sdk';
 import { Command, Option, program } from 'commander';
 import { Wallet } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
 
 import { buildOrder } from './build';
 import { ChainId, getConfig } from './config';
-import { quotePriorityOrder, quoteV1Order, quoteV2Order, quoteV3Order } from './quote';
-import { signPriorityOrder, signV1Order, signV2Order, signV3Order } from './sign';
-import { submitPriorityOrder, submitV1Order, submitV2Order, submitV3Order } from './submit';
+import {
+  quotePriorityOrder,
+  quoteV1Order,
+  quoteV2Order,
+  quoteV3Order,
+} from './quote';
+import {
+  signPriorityOrder,
+  signV1Order,
+  signV2Order,
+  signV3Order,
+} from './sign';
+import {
+  submitPriorityOrder,
+  submitV1Order,
+  submitV2Order,
+  submitV3Order,
+} from './submit';
 
 function setupProgram() {
   program.configureHelp({
@@ -108,7 +128,10 @@ function setupUniswapXV1() {
       'Exclusivity Override Bps'
     )
     .option('--add-fee-output', 'Add an additional output', false)
-    .option('--deadlineBufferSecs [deadlineBufferSecs]', 'Deadline buffer in seconds from now')
+    .option(
+      '--deadlineBufferSecs [deadlineBufferSecs]',
+      'Deadline buffer in seconds from now'
+    )
     .action(async (options) => {
       const order = buildOrder({
         tokenIn: options.tokenIn,
@@ -121,7 +144,9 @@ function setupUniswapXV1() {
         exclusiveFiller: options.exclusiveFiller,
         exclusivityOverrideBps: options.exclusivityOverrideBps,
         addFeeOutput: options.addFeeOutput,
-        deadline: options.deadlineBufferSecs ? Math.floor(Date.now() / 1000) + parseInt(options.deadlineBufferSecs) : undefined,
+        deadline: options.deadlineBufferSecs
+          ? Math.floor(Date.now() / 1000) + parseInt(options.deadlineBufferSecs)
+          : undefined,
       });
       if (options.serialize) {
         console.log(order.serialize());
@@ -290,7 +315,10 @@ function setupUniswapXV3() {
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
     .option('--openOrder', 'Force Open Order', true)
-    .option('--deadlineBufferSecs [deadlineBufferSecs]', 'Deadline Buffer Seconds')
+    .option(
+      '--deadlineBufferSecs [deadlineBufferSecs]',
+      'Deadline Buffer Seconds'
+    )
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();

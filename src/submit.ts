@@ -98,7 +98,7 @@ export async function submitV3Order(
     quoteId: quoteId,
     requestId: quoteId,
     allowNoQuote: true,
-    forceOpenOrder: true
+    forceOpenOrder: true,
   };
   try {
     const response = await axios.post(url, payload, {
