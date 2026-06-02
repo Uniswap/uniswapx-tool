@@ -3,13 +3,20 @@ import axios from 'axios';
 import { ChainId, Config } from './config';
 import { OrderType } from '@uniswap/uniswapx-sdk';
 
+function authHeaders(config: Config): Record<string, string> {
+  return {
+    ...(config.apiKey && { 'x-api-key': config.apiKey }),
+    ...(config.isBeta && { 'x-beta-rfq': 'true' }),
+  };
+}
+
 export async function submitV1Order(
   config: Config,
   encodedOrder: string,
   signature: string,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/limit-order`;
+  const url = `${config.submitApiUrl}/v2/limit-order`;
   const payload = {
     encodedOrder,
     signature,
@@ -22,6 +29,7 @@ export async function submitV1Order(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 201) {
@@ -42,7 +50,7 @@ export async function submitV2Order(
   chainId: number,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/rfq`;
+  const url = `${config.submitApiUrl}/v2/rfq`;
   const payload = {
     encodedInnerOrder,
     innerSig,
@@ -58,6 +66,7 @@ export async function submitV2Order(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 200) {
@@ -80,7 +89,7 @@ export async function submitV3Order(
   chainId: number,
   quoteId?: string
 ) {
-  const url = `${config.uniswapAPIUrl}/v2/rfq`;
+  const url = `${config.submitApiUrl}/v2/rfq`;
   const payload = {
     encodedInnerOrder,
     innerSig,
@@ -89,7 +98,7 @@ export async function submitV3Order(
     quoteId: quoteId,
     requestId: quoteId,
     allowNoQuote: true,
-    forceOpenOrder: true
+    forceOpenOrder: true,
   };
   try {
     const response = await axios.post(url, payload, {
@@ -97,6 +106,7 @@ export async function submitV3Order(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 200) {
@@ -120,7 +130,7 @@ export async function submitPriorityOrder(
   quoteId?: string
 ) {
   console.log('submitPriorityOrder', encodedOrder, signature, chainId, quoteId);
-  const url = `${config.uniswapAPIUrl}/v2/order`;
+  const url = `${config.submitApiUrl}/v2/order`;
   const payload = {
     encodedOrder,
     signature,
@@ -134,6 +144,7 @@ export async function submitPriorityOrder(
         origin: 'https://app.uniswap.org',
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        ...authHeaders(config),
       },
     });
     if (response.status !== 201) {

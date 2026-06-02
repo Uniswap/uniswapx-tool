@@ -54,7 +54,7 @@ export type PriorityQuoteRequestConfigType = {
   readonly startTimeBufferSecs?: number;
   readonly mpsPerPriorityFeeWei?: number;
   readonly baselinePriorityFeeWei?: number;
-}
+};
 
 export type QuoteRequestConfigType =
   | DutchQuoteRequestConfigType
@@ -67,6 +67,7 @@ export type QuoteRequestType = {
   readonly tokenOutChainId: number;
   readonly tokenOut: string;
   readonly amount: string;
+  readonly swapper: string;
   readonly type: string;
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
@@ -174,7 +175,10 @@ export async function quotePriorityOrder(
   chainId: number = ChainId.Base,
   overrides?: Partial<PriorityQuoteRequestConfigType>,
   slippageTolerance?: string
-): Promise<{ readonly order: UnsignedPriorityOrder; readonly quoteId: string }> {
+): Promise<{
+  readonly order: UnsignedPriorityOrder;
+  readonly quoteId: string;
+}> {
   const payload = buildQuoteRequest(
     params,
     OrderType.PRIORITY,
@@ -206,6 +210,7 @@ function buildQuoteRequest(
     tokenOutChainId: chainId,
     tokenOut: params.tokenOut,
     amount: params.amount,
+    swapper: params.swapper,
     slippageTolerance: slippageTolerance ?? undefined,
     type:
       params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
@@ -214,7 +219,7 @@ function buildQuoteRequest(
         routingType: orderType,
         swapper: params.swapper,
         recipient: params.swapper,
-        ...overrides
+        ...overrides,
       },
     ],
   };
@@ -226,14 +231,16 @@ async function makeQuoteRequest(
 ): Promise<QuoteResponse> {
   try {
     const response = await axios.post(
-      `${config.uniswapAPIUrl}/v2/quote`,
+      `${config.uniswapAPIUrl}/v1/quote`,
       payload,
       {
         headers: {
           accept: 'application/json, text/plain, */*',
           'content-type': 'application/json',
-          referrer: 'https://app.uniswap.org/',
+          referer: 'https://app.uniswap.org/',
           origin: 'https://app.uniswap.org/',
+          ...(config.apiKey && { 'x-api-key': config.apiKey }),
+          ...(config.isBeta && { 'x-beta-rfq': 'true' }),
         },
       }
     );
@@ -241,9 +248,25 @@ async function makeQuoteRequest(
       console.error('No quote available');
       process.exit(0);
     }
+    const expectedRouting = payload.configs[0].routingType;
+    if (response.data.routing !== expectedRouting) {
+      console.error(
+        `Expected ${expectedRouting} quote but received ${response.data.routing}.`
+      );
+      process.exit(0);
+    }
     return response.data.quote;
   } catch (error) {
-    console.error(error.message);
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Headers sent:', error.config?.headers);
+      console.error(
+        'Response body:',
+        JSON.stringify(error.response.data, null, 2)
+      );
+    } else {
+      console.error(error.message);
+    }
     process.exit(0);
   }
 }
