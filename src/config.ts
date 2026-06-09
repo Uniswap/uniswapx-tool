@@ -1,5 +1,4 @@
-const BETA_UNISWAP_API_URL = 'https://beta.api.uniswap.org';
-const PROD_UNISWAP_API_URL = 'https://api.uniswap.org';
+const PROD_UNISWAP_API_URL = 'https://trade-api.gateway.uniswap.org';
 
 export enum ChainId {
   Mainnet = 1,
@@ -21,7 +20,7 @@ export function getConfig(env: Env): Config {
   switch (env) {
     case Env.Beta:
       return {
-        uniswapAPIUrl: BETA_UNISWAP_API_URL,
+        uniswapAPIUrl: PROD_UNISWAP_API_URL,
       };
     case Env.Prod:
       return {
