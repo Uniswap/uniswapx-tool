@@ -200,6 +200,21 @@ export async function quotePriorityOrder(
   };
 }
 
+// Trading API (trade-api.gateway.uniswap.org) protocol names for the order
+// types it serves via the top-level `protocols` array, keyed by the routing
+// value it returns.
+const ORDER_TYPE_TO_PROTOCOL: Partial<Record<OrderType, string>> = {
+  [OrderType.DUTCH_V2]: 'UNISWAPX_V2',
+  [OrderType.DUTCH_V3]: 'UNISWAPX_V3',
+};
+
+const PROTOCOL_TO_ORDER_TYPE: Record<string, OrderType> = Object.fromEntries(
+  Object.entries(ORDER_TYPE_TO_PROTOCOL).map(([orderType, protocol]) => [
+    protocol,
+    orderType as OrderType,
+  ])
+);
+
 function buildQuoteRequest(
   params: QuoteParams,
   orderType: OrderType,
@@ -222,10 +237,11 @@ function buildQuoteRequest(
   // The trading API (trade-api.gateway.uniswap.org) selects UniswapX via the
   // top-level `protocols` array — the legacy unified-routing-api `configs`
   // shape is not understood and silently falls back to CLASSIC routing.
-  if (orderType === OrderType.DUTCH_V3) {
+  const protocol = ORDER_TYPE_TO_PROTOCOL[orderType];
+  if (protocol !== undefined) {
     return {
       ...base,
-      protocols: ['UNISWAPX_V3'],
+      protocols: [protocol],
     };
   }
 
@@ -265,8 +281,11 @@ async function makeQuoteRequest(
       console.error('No quote available');
       process.exit(0);
     }
-    const expectedRouting = payload.protocols?.includes('UNISWAPX_V3')
-      ? OrderType.DUTCH_V3
+    const requestedProtocol = payload.protocols?.find(
+      (protocol) => PROTOCOL_TO_ORDER_TYPE[protocol] !== undefined
+    );
+    const expectedRouting = requestedProtocol
+      ? PROTOCOL_TO_ORDER_TYPE[requestedProtocol]
       : payload.configs?.[0]?.routingType;
     if (response.data.routing !== expectedRouting) {
       console.error(
