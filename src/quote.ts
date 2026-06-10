@@ -71,7 +71,10 @@ export type QuoteRequestType = {
   readonly type: string;
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
-  readonly configs: QuoteRequestConfigType[];
+  // Legacy unified-routing-api shape; the trading API ignores it.
+  readonly configs?: QuoteRequestConfigType[];
+  // Trading API (trade-api.gateway.uniswap.org) protocol selection.
+  readonly protocols?: string[];
 };
 
 export type QuoteParams = {
@@ -204,7 +207,7 @@ function buildQuoteRequest(
   overrides?: Partial<QuoteRequestConfigType>,
   slippageTolerance?: string
 ): QuoteRequestType {
-  return {
+  const base = {
     tokenInChainId: chainId,
     tokenIn: params.tokenIn,
     tokenOutChainId: chainId,
@@ -214,6 +217,20 @@ function buildQuoteRequest(
     slippageTolerance: slippageTolerance ?? undefined,
     type:
       params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
+  };
+
+  // The trading API (trade-api.gateway.uniswap.org) selects UniswapX via the
+  // top-level `protocols` array — the legacy unified-routing-api `configs`
+  // shape is not understood and silently falls back to CLASSIC routing.
+  if (orderType === OrderType.DUTCH_V3) {
+    return {
+      ...base,
+      protocols: ['UNISWAPX_V3'],
+    };
+  }
+
+  return {
+    ...base,
     configs: [
       {
         routingType: orderType,
@@ -248,7 +265,9 @@ async function makeQuoteRequest(
       console.error('No quote available');
       process.exit(0);
     }
-    const expectedRouting = payload.configs[0].routingType;
+    const expectedRouting = payload.protocols?.includes('UNISWAPX_V3')
+      ? OrderType.DUTCH_V3
+      : payload.configs?.[0]?.routingType;
     if (response.data.routing !== expectedRouting) {
       console.error(
         `Expected ${expectedRouting} quote but received ${response.data.routing}.`
