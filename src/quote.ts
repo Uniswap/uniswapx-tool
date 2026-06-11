@@ -71,7 +71,10 @@ export type QuoteRequestType = {
   readonly type: string;
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
-  readonly configs: QuoteRequestConfigType[];
+  // Legacy unified-routing-api shape; the trading API ignores it.
+  readonly configs?: QuoteRequestConfigType[];
+  // Trading API (trade-api.gateway.uniswap.org) protocol selection.
+  readonly protocols?: string[];
 };
 
 export type QuoteParams = {
@@ -192,6 +195,21 @@ export async function quotePriorityOrder(
   };
 }
 
+// Trading API (trade-api.gateway.uniswap.org) protocol names for the order
+// types it serves via the top-level `protocols` array, keyed by the routing
+// value it returns.
+const ORDER_TYPE_TO_PROTOCOL: Partial<Record<OrderType, string>> = {
+  [OrderType.DUTCH_V2]: 'UNISWAPX_V2',
+  [OrderType.DUTCH_V3]: 'UNISWAPX_V3',
+};
+
+const PROTOCOL_TO_ORDER_TYPE: Record<string, OrderType> = Object.fromEntries(
+  Object.entries(ORDER_TYPE_TO_PROTOCOL).map(([orderType, protocol]) => [
+    protocol,
+    orderType as OrderType,
+  ])
+);
+
 function buildQuoteRequest(
   params: QuoteParams,
   orderType: OrderType,
@@ -199,7 +217,7 @@ function buildQuoteRequest(
   overrides?: Partial<QuoteRequestConfigType>,
   slippageTolerance?: string
 ): QuoteRequestType {
-  return {
+  const base = {
     tokenInChainId: chainId,
     tokenIn: params.tokenIn,
     tokenOutChainId: chainId,
@@ -209,6 +227,21 @@ function buildQuoteRequest(
     slippageTolerance: slippageTolerance ?? undefined,
     type:
       params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
+  };
+
+  // The trading API (trade-api.gateway.uniswap.org) selects UniswapX via the
+  // top-level `protocols` array — the legacy unified-routing-api `configs`
+  // shape is not understood and silently falls back to CLASSIC routing.
+  const protocol = ORDER_TYPE_TO_PROTOCOL[orderType];
+  if (protocol !== undefined) {
+    return {
+      ...base,
+      protocols: [protocol],
+    };
+  }
+
+  return {
+    ...base,
     configs: [
       {
         routingType: orderType,
@@ -244,7 +277,12 @@ async function makeQuoteRequest(
       console.error('No quote available');
       process.exit(0);
     }
-    const expectedRouting = payload.configs[0].routingType;
+    const requestedProtocol = payload.protocols?.find(
+      (protocol) => PROTOCOL_TO_ORDER_TYPE[protocol] !== undefined
+    );
+    const expectedRouting = requestedProtocol
+      ? PROTOCOL_TO_ORDER_TYPE[requestedProtocol]
+      : payload.configs?.[0]?.routingType;
     if (response.data.routing !== expectedRouting) {
       console.error(
         `Expected ${expectedRouting} quote but received ${response.data.routing}.`
