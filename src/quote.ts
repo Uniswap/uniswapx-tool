@@ -1,6 +1,4 @@
 import {
-  DutchOrder,
-  DutchOrderBuilder,
   UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
   UnsignedV3DutchOrder,
@@ -8,9 +6,9 @@ import {
 import axios from 'axios';
 
 import { ChainId, Config } from './config';
+import { logVerboseRequest, logVerboseResponse } from './log';
 
 enum OrderType {
-  DUTCH_V1 = 'DUTCH_LIMIT',
   DUTCH_V2 = 'DUTCH_V2',
   DUTCH_V3 = 'DUTCH_V3',
   PRIORITY = 'PRIORITY',
@@ -71,7 +69,15 @@ export type QuoteRequestType = {
   readonly type: string;
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
-  readonly configs: QuoteRequestConfigType[];
+  // Legacy unified-routing-api shape; the trading API ignores it.
+  readonly configs?: readonly QuoteRequestConfigType[];
+  // Trading API (trade-api.gateway.uniswap.org) protocol selection.
+  readonly protocols?: readonly string[];
+  // UniswapX option flags sent at the top level in the trading-API shape
+  // (nested in configs in the legacy shape).
+  readonly useSyntheticQuotes?: boolean;
+  readonly forceOpenOrders?: boolean;
+  readonly deadlineBufferSecs?: number;
 };
 
 export type QuoteParams = {
@@ -83,46 +89,16 @@ export type QuoteParams = {
 };
 
 // returns encoded order
-export async function quoteV1Order(
-  params: QuoteParams,
-  config: Config,
-  overrides?: Partial<DutchQuoteRequestConfigType>
-): Promise<{ readonly order: DutchOrder; readonly quoteId: string }> {
-  const payload = buildQuoteRequest(
-    params,
-    OrderType.DUTCH_V1,
-    ChainId.Mainnet,
-    overrides
-  );
-  const responseData = await makeQuoteRequest(payload, config);
-  const qid = responseData.quoteId;
-
-  const order = DutchOrder.parse(responseData.encodedOrder, ChainId.Mainnet);
-  const builder = DutchOrderBuilder.fromOrder(order);
-  const startTime =
-    Math.floor(Date.now() / 1000) + responseData.startTimeBufferSecs;
-  const endTime = startTime + responseData.auctionPeriodSecs;
-  const deadline = endTime + responseData.deadlineBufferSecs;
-
-  return {
-    order: builder
-      .decayStartTime(startTime)
-      .decayEndTime(endTime)
-      .deadline(deadline)
-      .build(),
-    quoteId: qid,
-  };
-}
-
-// returns encoded order
 export async function quoteV2Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Mainnet,
-  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
-    forceOpenOrders: false,
-  }
-): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {}
+): Promise<{
+  readonly order: UnsignedV2DutchOrder;
+  readonly quoteId: string;
+  readonly quote: QuoteResponse;
+}> {
   const payload = buildQuoteRequest(
     params,
     OrderType.DUTCH_V2,
@@ -137,6 +113,8 @@ export async function quoteV2Order(
   return {
     order,
     quoteId: qid,
+    // The raw quote object must be submitted back verbatim to `/v1/order`.
+    quote: responseData,
   };
 }
 
@@ -145,12 +123,13 @@ export async function quoteV3Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Arbitrum,
-  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
-    forceOpenOrders: true,
-    useSyntheticQuotes: true,
-  },
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {},
   slippageTolerance?: string
-): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
+): Promise<{
+  readonly order: UnsignedV3DutchOrder;
+  readonly quoteId: string;
+  readonly quote: QuoteResponse;
+}> {
   const payload = buildQuoteRequest(
     params,
     OrderType.DUTCH_V3,
@@ -166,6 +145,8 @@ export async function quoteV3Order(
   return {
     order,
     quoteId: qid,
+    // The raw quote object must be submitted back verbatim to `/v1/order`.
+    quote: responseData,
   };
 }
 
@@ -178,6 +159,7 @@ export async function quotePriorityOrder(
 ): Promise<{
   readonly order: UnsignedPriorityOrder;
   readonly quoteId: string;
+  readonly quote: QuoteResponse;
 }> {
   const payload = buildQuoteRequest(
     params,
@@ -194,8 +176,25 @@ export async function quotePriorityOrder(
   return {
     order,
     quoteId: qid,
+    // The raw quote object must be submitted back verbatim to `/v1/order`.
+    quote: responseData,
   };
 }
+
+// Trading API (trade-api.gateway.uniswap.org) protocol names for the order
+// types it serves via the top-level `protocols` array, keyed by the routing
+// value it returns.
+const ORDER_TYPE_TO_PROTOCOL: Partial<Record<OrderType, string>> = {
+  [OrderType.DUTCH_V2]: 'UNISWAPX_V2',
+  [OrderType.DUTCH_V3]: 'UNISWAPX_V3',
+};
+
+const PROTOCOL_TO_ORDER_TYPE: Record<string, OrderType> = Object.fromEntries(
+  Object.entries(ORDER_TYPE_TO_PROTOCOL).map(([orderType, protocol]) => [
+    protocol,
+    orderType as OrderType,
+  ])
+);
 
 function buildQuoteRequest(
   params: QuoteParams,
@@ -204,7 +203,7 @@ function buildQuoteRequest(
   overrides?: Partial<QuoteRequestConfigType>,
   slippageTolerance?: string
 ): QuoteRequestType {
-  return {
+  const base = {
     tokenInChainId: chainId,
     tokenIn: params.tokenIn,
     tokenOutChainId: chainId,
@@ -214,6 +213,32 @@ function buildQuoteRequest(
     slippageTolerance: slippageTolerance ?? undefined,
     type:
       params.type === TradeType.EXACT_INPUT ? 'EXACT_INPUT' : 'EXACT_OUTPUT',
+  };
+
+  // The trading API (trade-api.gateway.uniswap.org) selects UniswapX via the
+  // top-level `protocols` array — the legacy unified-routing-api `configs`
+  // shape is not understood and silently falls back to CLASSIC routing.
+  const protocol = ORDER_TYPE_TO_PROTOCOL[orderType];
+  if (protocol !== undefined) {
+    const dutchOverrides = (overrides ??
+      {}) as Partial<DutchV2V3QuoteRequestConfigType>;
+    return {
+      ...base,
+      protocols: [protocol],
+      ...(dutchOverrides.useSyntheticQuotes !== undefined && {
+        useSyntheticQuotes: dutchOverrides.useSyntheticQuotes,
+      }),
+      ...(dutchOverrides.forceOpenOrders !== undefined && {
+        forceOpenOrders: dutchOverrides.forceOpenOrders,
+      }),
+      ...(dutchOverrides.deadlineBufferSecs !== undefined && {
+        deadlineBufferSecs: dutchOverrides.deadlineBufferSecs,
+      }),
+    };
+  }
+
+  return {
+    ...base,
     configs: [
       {
         routingType: orderType,
@@ -229,26 +254,29 @@ async function makeQuoteRequest(
   payload: QuoteRequestType,
   config: Config
 ): Promise<QuoteResponse> {
+  const url = `${config.uniswapAPIUrl}/v1/quote`;
+  const headers = {
+    accept: 'application/json, text/plain, */*',
+    'content-type': 'application/json',
+    referer: 'https://app.uniswap.org/',
+    origin: 'https://app.uniswap.org/',
+    ...(config.apiKey && { 'x-api-key': config.apiKey }),
+    ...(config.isBeta && { 'x-beta-rfq': 'true' }),
+  };
+  logVerboseRequest(config.verbose, 'POST', url, headers, payload);
   try {
-    const response = await axios.post(
-      `${config.uniswapAPIUrl}/v1/quote`,
-      payload,
-      {
-        headers: {
-          accept: 'application/json, text/plain, */*',
-          'content-type': 'application/json',
-          referer: 'https://app.uniswap.org/',
-          origin: 'https://app.uniswap.org/',
-          ...(config.apiKey && { 'x-api-key': config.apiKey }),
-          ...(config.isBeta && { 'x-beta-rfq': 'true' }),
-        },
-      }
-    );
+    const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (!response.data) {
       console.error('No quote available');
       process.exit(0);
     }
-    const expectedRouting = payload.configs[0].routingType;
+    const requestedProtocol = payload.protocols?.find(
+      (protocol) => PROTOCOL_TO_ORDER_TYPE[protocol] !== undefined
+    );
+    const expectedRouting = requestedProtocol
+      ? PROTOCOL_TO_ORDER_TYPE[requestedProtocol]
+      : payload.configs?.[0]?.routingType;
     if (response.data.routing !== expectedRouting) {
       console.error(
         `Expected ${expectedRouting} quote but received ${response.data.routing}.`

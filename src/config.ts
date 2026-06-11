@@ -1,5 +1,4 @@
 const PROD_UNISWAP_API_URL = 'https://trade-api.gateway.uniswap.org';
-const PROD_SUBMIT_API_URL = 'https://api.uniswap.org';
 
 export enum ChainId {
   Mainnet = 1,
@@ -13,6 +12,7 @@ export type Config = {
   readonly submitApiUrl: string;
   readonly apiKey?: string;
   readonly isBeta: boolean;
+  readonly verbose: boolean;
 };
 
 export enum Env {
@@ -20,7 +20,7 @@ export enum Env {
   Prod = 'prod',
 }
 
-export function getConfig(env: Env): Config {
+export function getConfig(env: Env, verbose = false): Config {
   const apiKey = process.env.UNISWAP_API_KEY;
   if (apiKey === undefined || apiKey.trim() === '') {
     throw new Error('UNISWAP_API_KEY is not set');
@@ -29,16 +29,18 @@ export function getConfig(env: Env): Config {
     case Env.Beta:
       return {
         uniswapAPIUrl: PROD_UNISWAP_API_URL,
-        submitApiUrl: PROD_SUBMIT_API_URL,
+        submitApiUrl: PROD_UNISWAP_API_URL,
         apiKey,
         isBeta: true,
+        verbose,
       };
     case Env.Prod:
       return {
         uniswapAPIUrl: PROD_UNISWAP_API_URL,
-        submitApiUrl: PROD_SUBMIT_API_URL,
+        submitApiUrl: PROD_UNISWAP_API_URL,
         apiKey,
         isBeta: false,
+        verbose,
       };
     default:
       throw new Error(`Unknown env: ${env}`);

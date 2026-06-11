@@ -1,34 +1,16 @@
 import 'dotenv/config';
 import {
-  DutchOrder,
+  UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
   UnsignedV3DutchOrder,
-  UnsignedPriorityOrder,
 } from '@uniswap/uniswapx-sdk';
 import { Command, Option, program } from 'commander';
 import { Wallet } from 'ethers';
-import { v4 as uuidv4 } from 'uuid';
 
-import { buildOrder } from './build';
 import { ChainId, getConfig } from './config';
-import {
-  quotePriorityOrder,
-  quoteV1Order,
-  quoteV2Order,
-  quoteV3Order,
-} from './quote';
-import {
-  signPriorityOrder,
-  signV1Order,
-  signV2Order,
-  signV3Order,
-} from './sign';
-import {
-  submitPriorityOrder,
-  submitV1Order,
-  submitV2Order,
-  submitV3Order,
-} from './submit';
+import { quotePriorityOrder, quoteV2Order, quoteV3Order } from './quote';
+import { signPriorityOrder, signV2Order, signV3Order } from './sign';
+import { submitOrder } from './submit';
 
 function setupProgram() {
   program.configureHelp({
@@ -42,153 +24,16 @@ function setupProgram() {
       new Option('--env <env>', 'Environment')
         .choices(['beta', 'prod'])
         .default('beta')
+    )
+    .option(
+      '-v, --verbose',
+      'Print request headers, request body, and response',
+      false
     );
 
-  setupUniswapXV1();
   setupUniswapXV2();
   setupUniswapXV3();
   setupPriority();
-}
-
-function setupUniswapXV1() {
-  const v1Command = new Command('v1');
-
-  v1Command
-    .command('quote')
-    .description('Quote a UniswapX order')
-    .requiredOption('--tokenIn <tokenIn>', 'Token In')
-    .requiredOption('--tokenOut <tokenOut>', 'Token Out')
-    .requiredOption('--amount <amount>', 'Amount In Start')
-    .requiredOption('--swapper <swapper>', 'Swapper')
-    .addOption(
-      new Option('--type <type>', 'Trade Type')
-        .choices(['exactIn', 'exactOut'])
-        .default('exactIn')
-    )
-    .option('--serialize', 'Return serialized order', false)
-    .option('--exclusive-filler [exclusiveFiller]', 'Exclusive Filler')
-    .option(
-      '--exclusivity-override-bps [exclusivityOverrideBps]',
-      'Exclusivity Override Bps'
-    )
-    .action(async (options) => {
-      const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
-      // eslint-disable-next-line prefer-const
-      let { order, quoteId } = await quoteV1Order(
-        {
-          tokenIn: options.tokenIn,
-          tokenOut: options.tokenOut,
-          amount: options.amount,
-          swapper: options.swapper,
-          type: options.type,
-        },
-        config
-      );
-
-      // rebuild with overrides
-      if (options.exclusiveFiller || options.exclusivityOverrideBps) {
-        order = DutchOrder.fromJSON(
-          Object.assign(order.toJSON(), {
-            ...(options.exclusiveFiller && {
-              exclusiveFiller: options.exclusiveFiller,
-            }),
-            ...(options.exclusivityOverrideBps && {
-              exclusivityOverrideBps: options.exclusivityOverrideBps,
-            }),
-          }),
-          ChainId.Mainnet
-        );
-      }
-
-      if (options.serialize) {
-        console.log(order.serialize());
-      } else {
-        console.log({
-          ...order.toJSON(),
-          quoteId: quoteId,
-        });
-      }
-    });
-
-  v1Command
-    .command('build')
-    .description('Build a UniswapX order')
-    .requiredOption('--tokenIn <tokenIn>', 'Token In')
-    .requiredOption('--tokenOut <tokenOut>', 'Token Out')
-    .requiredOption('--amountInStart <amountInStart>', 'Amount In Start')
-    .requiredOption('--amountInEnd <amountInEnd>', 'Amount In End')
-    .requiredOption('--amountOutStart <amountOutStart>', 'Amount Out Start')
-    .requiredOption('--amountOutEnd <amountOutEnd>', 'Amount Out End')
-    .requiredOption('--swapper <swapper>', 'Swapper')
-    .option('--serialize', 'Return serialized order', false)
-    .option('--exclusive-filler [exclusiveFiller]', 'Exclusive Filler')
-    .option(
-      '--exclusivity-override-bps [exclusivityOverrideBps]',
-      'Exclusivity Override Bps'
-    )
-    .option('--add-fee-output', 'Add an additional output', false)
-    .option(
-      '--deadlineBufferSecs [deadlineBufferSecs]',
-      'Deadline buffer in seconds from now'
-    )
-    .action(async (options) => {
-      const order = buildOrder({
-        tokenIn: options.tokenIn,
-        tokenOut: options.tokenOut,
-        amountInStart: options.amountInStart,
-        amountInEnd: options.amountInEnd,
-        amountOutStart: options.amountOutStart,
-        amountOutEnd: options.amountOutEnd,
-        swapper: options.swapper,
-        exclusiveFiller: options.exclusiveFiller,
-        exclusivityOverrideBps: options.exclusivityOverrideBps,
-        addFeeOutput: options.addFeeOutput,
-        deadline: options.deadlineBufferSecs
-          ? Math.floor(Date.now() / 1000) + parseInt(options.deadlineBufferSecs)
-          : undefined,
-      });
-      if (options.serialize) {
-        console.log(order.serialize());
-      } else {
-        console.log(order.toJSON());
-      }
-    });
-
-  v1Command
-    .command('submit')
-    .description('Submit a UniswapX order')
-    .argument('<serializedOrder>', 'serialized order')
-    .option('--signature [signature]', 'signature')
-    .option('--private-key [privateKey]', 'private key')
-    .option('--quote-id [quoteId]', 'add quote id to order')
-    .option('--random-qid', 'add random quote id to order')
-    .action(async (serializedOrder, options) => {
-      const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
-      const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
-      let signature: string;
-      let quoteId: string;
-      if (options.quoteId) {
-        quoteId = options.quoteId;
-      } else if (options.randomQid) {
-        quoteId = uuidv4();
-      }
-      if (options.signature) {
-        signature = options.signature;
-      } else if (privateKey) {
-        ({ signature } = await signV1Order(
-          serializedOrder,
-          new Wallet(privateKey)
-        ));
-      } else {
-        console.error('Either signature or private key is required');
-        process.exit(1);
-      }
-      await submitV1Order(config, serializedOrder, signature, quoteId);
-    });
-
-  program.addCommand(v1Command);
 }
 
 function setupUniswapXV2() {
@@ -212,9 +57,9 @@ function setupUniswapXV2() {
     .option('--openOrder', 'Force Open Order', false)
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
-      let { order, quoteId } = await quoteV2Order(
+      let { order, quote } = await quoteV2Order(
         {
           tokenIn: options.tokenIn,
           tokenOut: options.tokenOut,
@@ -225,8 +70,10 @@ function setupUniswapXV2() {
         config,
         options.chainId,
         {
-          useSyntheticQuotes: options.openOrder,
-          forceOpenOrders: options.openOrder,
+          ...(options.openOrder && {
+            useSyntheticQuotes: true,
+            forceOpenOrders: true,
+          }),
         }
       );
 
@@ -245,38 +92,46 @@ function setupUniswapXV2() {
       if (options.serialize) {
         console.log(order.serialize());
       } else {
-        console.log({
-          ...order.toJSON(),
-          quoteId: quoteId,
-        });
+        // Print the raw quote object so it can be piped straight into
+        // `v2 submit`, keeping the encoded order in sync with any overrides.
+        console.log(
+          JSON.stringify({ ...quote, encodedOrder: order.serialize() })
+        );
       }
     });
 
   v2Command
     .command('submit')
     .description('Submit a UniswapX V2 order')
-    .argument('<serializedOrder>', 'serialized order')
+    .argument('<quote>', 'quote object JSON (as printed by `v2 quote`)')
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
-    .option('--quote-id [quoteId]', 'add quote id to order')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Mainnet.toString())
-    .option('--random-qid', 'add random quote id to order')
-    .action(async (serializedOrder, options) => {
+    .action(async (quoteJson, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
-      let signature: string;
-      let quoteId: string;
-      if (options.quoteId) {
-        quoteId = options.quoteId;
-      } else if (options.randomQid) {
-        quoteId = uuidv4();
+
+      let quote: { encodedOrder: string };
+      try {
+        quote = JSON.parse(quoteJson);
+      } catch {
+        console.error(
+          'Invalid quote argument: expected the JSON quote object printed by `v2 quote`'
+        );
+        process.exit(1);
       }
+      if (!quote.encodedOrder) {
+        console.error('Quote object is missing `encodedOrder`');
+        process.exit(1);
+      }
+
+      let signature: string;
       if (options.signature) {
         signature = options.signature;
       } else if (privateKey) {
         ({ signature } = await signV2Order(
-          serializedOrder,
+          quote.encodedOrder,
           new Wallet(privateKey),
           options.chainId
         ));
@@ -284,13 +139,7 @@ function setupUniswapXV2() {
         console.error('Either signature or private key is required');
         process.exit(1);
       }
-      await submitV2Order(
-        config,
-        serializedOrder,
-        signature,
-        options.chainId,
-        quoteId
-      );
+      await submitOrder(config, quote, signature, 'DUTCH_V2');
     });
 
   program.addCommand(v2Command);
@@ -314,7 +163,7 @@ function setupUniswapXV3() {
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
-    .option('--openOrder', 'Force Open Order', true)
+    .option('--openOrder', 'Force Open Order', false)
     .option(
       '--deadlineBufferSecs [deadlineBufferSecs]',
       'Deadline Buffer Seconds'
@@ -322,9 +171,9 @@ function setupUniswapXV3() {
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
-      let { order, quoteId } = await quoteV3Order(
+      let { order, quote } = await quoteV3Order(
         {
           tokenIn: options.tokenIn,
           tokenOut: options.tokenOut,
@@ -335,9 +184,13 @@ function setupUniswapXV3() {
         config,
         options.chainId,
         {
-          useSyntheticQuotes: options.openOrder,
-          forceOpenOrders: options.openOrder,
-          deadlineBufferSecs: options.deadlineBufferSecs,
+          ...(options.openOrder && {
+            useSyntheticQuotes: true,
+            forceOpenOrders: true,
+          }),
+          ...(options.deadlineBufferSecs !== undefined && {
+            deadlineBufferSecs: parseInt(options.deadlineBufferSecs, 10),
+          }),
         },
         options.slippageTolerance
       );
@@ -357,38 +210,46 @@ function setupUniswapXV3() {
       if (options.serialize) {
         console.log(order.serialize());
       } else {
-        console.log({
-          ...order.toJSON(),
-          quoteId: quoteId,
-        });
+        // Print the raw quote object so it can be piped straight into
+        // `v3 submit`, keeping the encoded order in sync with any overrides.
+        console.log(
+          JSON.stringify({ ...quote, encodedOrder: order.serialize() })
+        );
       }
     });
 
   v3Command
     .command('submit')
     .description('Submit a UniswapX V3 order')
-    .argument('<serializedOrder>', 'serialized order')
+    .argument('<quote>', 'quote object JSON (as printed by `v3 quote`)')
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
-    .option('--quote-id [quoteId]', 'add quote id to order')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
-    .option('--random-qid', 'add random quote id to order')
-    .action(async (serializedOrder, options) => {
+    .action(async (quoteJson, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
-      let signature: string;
-      let quoteId: string;
-      if (options.quoteId) {
-        quoteId = options.quoteId;
-      } else if (options.randomQid) {
-        quoteId = uuidv4();
+
+      let quote: { encodedOrder: string };
+      try {
+        quote = JSON.parse(quoteJson);
+      } catch {
+        console.error(
+          'Invalid quote argument: expected the JSON quote object printed by `v3 quote`'
+        );
+        process.exit(1);
       }
+      if (!quote.encodedOrder) {
+        console.error('Quote object is missing `encodedOrder`');
+        process.exit(1);
+      }
+
+      let signature: string;
       if (options.signature) {
         signature = options.signature;
       } else if (privateKey) {
         ({ signature } = await signV3Order(
-          serializedOrder,
+          quote.encodedOrder,
           new Wallet(privateKey),
           options.chainId
         ));
@@ -396,13 +257,7 @@ function setupUniswapXV3() {
         console.error('Either signature or private key is required');
         process.exit(1);
       }
-      await submitV3Order(
-        config,
-        serializedOrder,
-        signature,
-        options.chainId,
-        quoteId
-      );
+      await submitOrder(config, quote, signature, 'DUTCH_V3');
     });
 
   program.addCommand(v3Command);
@@ -429,9 +284,9 @@ function setupPriority() {
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
-      let { order, quoteId } = await quotePriorityOrder(
+      let { order, quote } = await quotePriorityOrder(
         {
           tokenIn: options.tokenIn,
           tokenOut: options.tokenOut,
@@ -460,38 +315,46 @@ function setupPriority() {
       if (options.serialize) {
         console.log(order.serialize());
       } else {
-        console.log({
-          ...order.toJSON(),
-          quoteId: quoteId,
-        });
+        // Print the raw quote object so it can be piped straight into
+        // `priority submit`, keeping the encoded order in sync with overrides.
+        console.log(
+          JSON.stringify({ ...quote, encodedOrder: order.serialize() })
+        );
       }
     });
 
   priorityCommand
     .command('submit')
     .description('Submit a UniswapX priority order')
-    .argument('<serializedOrder>', 'serialized order')
+    .argument('<quote>', 'quote object JSON (as printed by `priority quote`)')
     .option('--signature [signature]', 'signature')
     .option('--private-key [privateKey]', 'private key')
-    .option('--quote-id [quoteId]', 'add quote id to order')
     .option('-c, --chain-id [chainId]', 'chain id', '1')
-    .option('--random-qid', 'add random quote id to order')
-    .action(async (serializedOrder, options) => {
+    .action(async (quoteJson, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
-      let signature: string;
-      let quoteId: string;
-      if (options.quoteId) {
-        quoteId = options.quoteId;
-      } else if (options.randomQid) {
-        quoteId = uuidv4();
+
+      let quote: { encodedOrder: string };
+      try {
+        quote = JSON.parse(quoteJson);
+      } catch {
+        console.error(
+          'Invalid quote argument: expected the JSON quote object printed by `priority quote`'
+        );
+        process.exit(1);
       }
+      if (!quote.encodedOrder) {
+        console.error('Quote object is missing `encodedOrder`');
+        process.exit(1);
+      }
+
+      let signature: string;
       if (options.signature) {
         signature = options.signature;
       } else if (privateKey) {
         ({ signature } = await signPriorityOrder(
-          serializedOrder,
+          quote.encodedOrder,
           new Wallet(privateKey),
           options.chainId
         ));
@@ -499,13 +362,7 @@ function setupPriority() {
         console.error('Either signature or private key is required');
         process.exit(1);
       }
-      await submitPriorityOrder(
-        config,
-        serializedOrder,
-        signature,
-        options.chainId,
-        quoteId
-      );
+      await submitOrder(config, quote, signature, 'PRIORITY');
     });
 
   program.addCommand(priorityCommand);
