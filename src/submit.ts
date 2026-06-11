@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { Config } from './config';
+import { logVerboseRequest, logVerboseResponse } from './log';
 
 function authHeaders(config: Config): Record<string, string> {
   return {
@@ -33,12 +34,10 @@ export async function submitOrder(
     'content-type': 'application/json',
     ...authHeaders(config),
   };
-  console.error('Sending request:');
-  console.error('  URL:', `POST ${url}`);
-  console.error('  Headers:', JSON.stringify(headers, null, 2));
-  console.error('  Body:', JSON.stringify(payload, null, 2));
+  logVerboseRequest(config.verbose, 'POST', url, headers, payload);
   try {
     const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (response.status < 200 || response.status >= 300) {
       throw new Error(`Order submission failed with ${response.status}`);
     }

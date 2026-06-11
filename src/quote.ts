@@ -6,6 +6,7 @@ import {
 import axios from 'axios';
 
 import { ChainId, Config } from './config';
+import { logVerboseRequest, logVerboseResponse } from './log';
 
 enum OrderType {
   DUTCH_V2 = 'DUTCH_V2',
@@ -69,9 +70,14 @@ export type QuoteRequestType = {
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
   // Legacy unified-routing-api shape; the trading API ignores it.
-  readonly configs?: QuoteRequestConfigType[];
+  readonly configs?: readonly QuoteRequestConfigType[];
   // Trading API (trade-api.gateway.uniswap.org) protocol selection.
-  readonly protocols?: string[];
+  readonly protocols?: readonly string[];
+  // UniswapX option flags sent at the top level in the trading-API shape
+  // (nested in configs in the legacy shape).
+  readonly useSyntheticQuotes?: boolean;
+  readonly forceOpenOrders?: boolean;
+  readonly deadlineBufferSecs?: number;
 };
 
 export type QuoteParams = {
@@ -87,9 +93,7 @@ export async function quoteV2Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Mainnet,
-  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
-    forceOpenOrders: false,
-  }
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {}
 ): Promise<{
   readonly order: UnsignedV2DutchOrder;
   readonly quoteId: string;
@@ -119,10 +123,7 @@ export async function quoteV3Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Arbitrum,
-  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
-    forceOpenOrders: true,
-    useSyntheticQuotes: true,
-  },
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {},
   slippageTolerance?: string
 ): Promise<{
   readonly order: UnsignedV3DutchOrder;
@@ -219,9 +220,20 @@ function buildQuoteRequest(
   // shape is not understood and silently falls back to CLASSIC routing.
   const protocol = ORDER_TYPE_TO_PROTOCOL[orderType];
   if (protocol !== undefined) {
+    const dutchOverrides = (overrides ??
+      {}) as Partial<DutchV2V3QuoteRequestConfigType>;
     return {
       ...base,
       protocols: [protocol],
+      ...(dutchOverrides.useSyntheticQuotes !== undefined && {
+        useSyntheticQuotes: dutchOverrides.useSyntheticQuotes,
+      }),
+      ...(dutchOverrides.forceOpenOrders !== undefined && {
+        forceOpenOrders: dutchOverrides.forceOpenOrders,
+      }),
+      ...(dutchOverrides.deadlineBufferSecs !== undefined && {
+        deadlineBufferSecs: dutchOverrides.deadlineBufferSecs,
+      }),
     };
   }
 
@@ -251,12 +263,10 @@ async function makeQuoteRequest(
     ...(config.apiKey && { 'x-api-key': config.apiKey }),
     ...(config.isBeta && { 'x-beta-rfq': 'true' }),
   };
-  console.error('Sending request:');
-  console.error('  URL:', `POST ${url}`);
-  console.error('  Headers:', JSON.stringify(headers, null, 2));
-  console.error('  Body:', JSON.stringify(payload, null, 2));
+  logVerboseRequest(config.verbose, 'POST', url, headers, payload);
   try {
     const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (!response.data) {
       console.error('No quote available');
       process.exit(0);

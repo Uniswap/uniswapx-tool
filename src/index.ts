@@ -24,6 +24,11 @@ function setupProgram() {
       new Option('--env <env>', 'Environment')
         .choices(['beta', 'prod'])
         .default('beta')
+    )
+    .option(
+      '-v, --verbose',
+      'Print request headers, request body, and response',
+      false
     );
 
   setupUniswapXV2();
@@ -52,7 +57,7 @@ function setupUniswapXV2() {
     .option('--openOrder', 'Force Open Order', false)
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quote } = await quoteV2Order(
         {
@@ -65,8 +70,10 @@ function setupUniswapXV2() {
         config,
         options.chainId,
         {
-          useSyntheticQuotes: options.openOrder,
-          forceOpenOrders: options.openOrder,
+          ...(options.openOrder && {
+            useSyntheticQuotes: true,
+            forceOpenOrders: true,
+          }),
         }
       );
 
@@ -102,7 +109,7 @@ function setupUniswapXV2() {
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Mainnet.toString())
     .action(async (quoteJson, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
 
       let quote: { encodedOrder: string };
@@ -156,7 +163,7 @@ function setupUniswapXV3() {
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
-    .option('--openOrder', 'Force Open Order', true)
+    .option('--openOrder', 'Force Open Order', false)
     .option(
       '--deadlineBufferSecs [deadlineBufferSecs]',
       'Deadline Buffer Seconds'
@@ -164,7 +171,7 @@ function setupUniswapXV3() {
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quote } = await quoteV3Order(
         {
@@ -177,9 +184,13 @@ function setupUniswapXV3() {
         config,
         options.chainId,
         {
-          useSyntheticQuotes: options.openOrder,
-          forceOpenOrders: options.openOrder,
-          deadlineBufferSecs: options.deadlineBufferSecs,
+          ...(options.openOrder && {
+            useSyntheticQuotes: true,
+            forceOpenOrders: true,
+          }),
+          ...(options.deadlineBufferSecs !== undefined && {
+            deadlineBufferSecs: parseInt(options.deadlineBufferSecs, 10),
+          }),
         },
         options.slippageTolerance
       );
@@ -216,7 +227,7 @@ function setupUniswapXV3() {
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
     .action(async (quoteJson, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
 
       let quote: { encodedOrder: string };
@@ -273,7 +284,7 @@ function setupPriority() {
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quote } = await quotePriorityOrder(
         {
@@ -321,7 +332,7 @@ function setupPriority() {
     .option('-c, --chain-id [chainId]', 'chain id', '1')
     .action(async (quoteJson, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
 
       let quote: { encodedOrder: string };

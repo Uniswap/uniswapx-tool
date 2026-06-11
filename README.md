@@ -146,7 +146,7 @@ Options:
   --serialize                                  Return serialized order (default: false)
   --cosigner [cosigner]                        Cosigner
   -c, --chain-id [chainId]                     chain id (default: "42161")
-  --openOrder                                  Force Open Order (default: true)
+  --openOrder                                  Force Open Order (default: false)
   --deadlineBufferSecs [deadlineBufferSecs]    Deadline Buffer Seconds
   --slippageTolerance [slippageTolerance]      Slippage Tolerance
   -h, --help                                   display help for command
