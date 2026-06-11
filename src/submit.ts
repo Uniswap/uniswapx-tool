@@ -23,6 +23,7 @@ export async function submitV1Order(
     chainId: ChainId.Mainnet,
     quoteId: quoteId,
   };
+  console.log('Request body:', JSON.stringify(payload, null, 2));
   try {
     const response = await axios.post(url, payload, {
       headers: {
@@ -60,6 +61,7 @@ export async function submitV2Order(
     requestId: quoteId,
     allowNoQuote: true,
   };
+  console.log('Request body:', JSON.stringify(payload, null, 2));
   try {
     const response = await axios.post(url, payload, {
       headers: {
@@ -100,6 +102,7 @@ export async function submitV3Order(
     allowNoQuote: true,
     forceOpenOrder: true,
   };
+  console.log('Request body:', JSON.stringify(payload, null, 2));
   try {
     const response = await axios.post(url, payload, {
       headers: {
@@ -138,6 +141,7 @@ export async function submitPriorityOrder(
     quoteId: quoteId,
     orderType: OrderType.Priority,
   };
+  console.log('Request body:', JSON.stringify(payload, null, 2));
   try {
     const response = await axios.post(url, payload, {
       headers: {

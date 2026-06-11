@@ -225,8 +225,10 @@ function setupUniswapXV2() {
         config,
         options.chainId,
         {
-          useSyntheticQuotes: options.openOrder,
-          forceOpenOrders: options.openOrder,
+          ...(options.openOrder && {
+            useSyntheticQuotes: true,
+            forceOpenOrders: true,
+          }),
         }
       );
 
@@ -314,7 +316,7 @@ function setupUniswapXV3() {
     .option('--serialize', 'Return serialized order', false)
     .option('--cosigner [cosigner]', 'Cosigner')
     .option('-c, --chain-id [chainId]', 'chain id', ChainId.Arbitrum.toString())
-    .option('--openOrder', 'Force Open Order', true)
+    .option('--openOrder', 'Force Open Order', false)
     .option(
       '--deadlineBufferSecs [deadlineBufferSecs]',
       'Deadline Buffer Seconds'
@@ -335,8 +337,10 @@ function setupUniswapXV3() {
         config,
         options.chainId,
         {
-          useSyntheticQuotes: options.openOrder,
-          forceOpenOrders: options.openOrder,
+          ...(options.openOrder && {
+            useSyntheticQuotes: true,
+            forceOpenOrders: true,
+          }),
           deadlineBufferSecs: options.deadlineBufferSecs,
         },
         options.slippageTolerance

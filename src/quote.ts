@@ -119,9 +119,7 @@ export async function quoteV2Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Mainnet,
-  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
-    forceOpenOrders: false,
-  }
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {}
 ): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(
     params,
@@ -145,10 +143,7 @@ export async function quoteV3Order(
   params: QuoteParams,
   config: Config,
   chainId: number = ChainId.Arbitrum,
-  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
-    forceOpenOrders: true,
-    useSyntheticQuotes: true,
-  },
+  overrides: Partial<DutchV2V3QuoteRequestConfigType> = {},
   slippageTolerance?: string
 ): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
   const payload = buildQuoteRequest(
@@ -229,6 +224,7 @@ async function makeQuoteRequest(
   payload: QuoteRequestType,
   config: Config
 ): Promise<QuoteResponse> {
+  console.log('Request body:', JSON.stringify(payload, null, 2));
   try {
     const response = await axios.post(
       `${config.uniswapAPIUrl}/v1/quote`,
