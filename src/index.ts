@@ -42,6 +42,11 @@ function setupProgram() {
       new Option('--env <env>', 'Environment')
         .choices(['beta', 'prod'])
         .default('beta')
+    )
+    .option(
+      '-v, --verbose',
+      'Print request headers, request body, and response',
+      false
     );
 
   setupUniswapXV1();
@@ -73,7 +78,7 @@ function setupUniswapXV1() {
     )
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quoteId } = await quoteV1Order(
         {
@@ -165,7 +170,7 @@ function setupUniswapXV1() {
     .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
@@ -212,7 +217,7 @@ function setupUniswapXV2() {
     .option('--openOrder', 'Force Open Order', false)
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quoteId } = await quoteV2Order(
         {
@@ -265,7 +270,7 @@ function setupUniswapXV2() {
     .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
@@ -324,7 +329,7 @@ function setupUniswapXV3() {
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quoteId } = await quoteV3Order(
         {
@@ -379,7 +384,7 @@ function setupUniswapXV3() {
     .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;
@@ -433,7 +438,7 @@ function setupPriority() {
     .option('--slippageTolerance [slippageTolerance]', 'Slippage Tolerance')
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       // eslint-disable-next-line prefer-const
       let { order, quoteId } = await quotePriorityOrder(
         {
@@ -482,7 +487,7 @@ function setupPriority() {
     .option('--random-qid', 'add random quote id to order')
     .action(async (serializedOrder, options) => {
       const globalOpts = program.optsWithGlobals();
-      const config = getConfig(globalOpts.env);
+      const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
       let signature: string;
       let quoteId: string;

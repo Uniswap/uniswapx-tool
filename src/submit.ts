@@ -1,12 +1,22 @@
 import axios from 'axios';
 
 import { ChainId, Config } from './config';
+import { logVerboseRequest, logVerboseResponse } from './log';
 import { OrderType } from '@uniswap/uniswapx-sdk';
 
 function authHeaders(config: Config): Record<string, string> {
   return {
     ...(config.apiKey && { 'x-api-key': config.apiKey }),
     ...(config.isBeta && { 'x-beta-rfq': 'true' }),
+  };
+}
+
+function submitHeaders(config: Config): Record<string, string> {
+  return {
+    origin: 'https://app.uniswap.org',
+    accept: 'application/json, text/plain, */*',
+    'content-type': 'application/json',
+    ...authHeaders(config),
   };
 }
 
@@ -23,16 +33,11 @@ export async function submitV1Order(
     chainId: ChainId.Mainnet,
     quoteId: quoteId,
   };
-  console.log('Request body:', JSON.stringify(payload, null, 2));
+  const headers = submitHeaders(config);
+  logVerboseRequest(config.verbose, url, headers, payload);
   try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
+    const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (response.status !== 201) {
       throw new Error(`Order submission failed with ${response.status}`);
     }
@@ -61,16 +66,11 @@ export async function submitV2Order(
     requestId: quoteId,
     allowNoQuote: true,
   };
-  console.log('Request body:', JSON.stringify(payload, null, 2));
+  const headers = submitHeaders(config);
+  logVerboseRequest(config.verbose, url, headers, payload);
   try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
+    const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (response.status !== 200) {
       throw new Error(`Order submission failed with ${response.status}`);
     }
@@ -102,16 +102,11 @@ export async function submitV3Order(
     allowNoQuote: true,
     forceOpenOrder: true,
   };
-  console.log('Request body:', JSON.stringify(payload, null, 2));
+  const headers = submitHeaders(config);
+  logVerboseRequest(config.verbose, url, headers, payload);
   try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
+    const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (response.status !== 200) {
       throw new Error(`Order submission failed with ${response.status}`);
     }
@@ -141,16 +136,11 @@ export async function submitPriorityOrder(
     quoteId: quoteId,
     orderType: OrderType.Priority,
   };
-  console.log('Request body:', JSON.stringify(payload, null, 2));
+  const headers = submitHeaders(config);
+  logVerboseRequest(config.verbose, url, headers, payload);
   try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
+    const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (response.status !== 201) {
       throw new Error(`Order submission failed with ${response.status}`);
     }

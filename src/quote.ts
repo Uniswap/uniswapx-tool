@@ -8,6 +8,7 @@ import {
 import axios from 'axios';
 
 import { ChainId, Config } from './config';
+import { logVerboseRequest, logVerboseResponse } from './log';
 
 enum OrderType {
   DUTCH_V1 = 'DUTCH_LIMIT',
@@ -72,9 +73,14 @@ export type QuoteRequestType = {
   readonly slippageTolerance?: string;
   readonly useUniswapX?: boolean;
   // Legacy unified-routing-api shape; the trading API ignores it.
-  readonly configs?: QuoteRequestConfigType[];
+  readonly configs?: readonly QuoteRequestConfigType[];
   // Trading API (trade-api.gateway.uniswap.org) protocol selection.
-  readonly protocols?: string[];
+  readonly protocols?: readonly string[];
+  // UniswapX option flags sent at the top level in the trading-API shape
+  // (nested in configs in the legacy shape).
+  readonly useSyntheticQuotes?: boolean;
+  readonly forceOpenOrders?: boolean;
+  readonly deadlineBufferSecs?: number;
 };
 
 export type QuoteParams = {
@@ -234,9 +240,20 @@ function buildQuoteRequest(
   // shape is not understood and silently falls back to CLASSIC routing.
   const protocol = ORDER_TYPE_TO_PROTOCOL[orderType];
   if (protocol !== undefined) {
+    const dutchOverrides = (overrides ??
+      {}) as Partial<DutchV2V3QuoteRequestConfigType>;
     return {
       ...base,
       protocols: [protocol],
+      ...(dutchOverrides.useSyntheticQuotes !== undefined && {
+        useSyntheticQuotes: dutchOverrides.useSyntheticQuotes,
+      }),
+      ...(dutchOverrides.forceOpenOrders !== undefined && {
+        forceOpenOrders: dutchOverrides.forceOpenOrders,
+      }),
+      ...(dutchOverrides.deadlineBufferSecs !== undefined && {
+        deadlineBufferSecs: dutchOverrides.deadlineBufferSecs,
+      }),
     };
   }
 
@@ -257,22 +274,19 @@ async function makeQuoteRequest(
   payload: QuoteRequestType,
   config: Config
 ): Promise<QuoteResponse> {
-  console.log('Request body:', JSON.stringify(payload, null, 2));
+  const url = `${config.uniswapAPIUrl}/v1/quote`;
+  const headers = {
+    accept: 'application/json, text/plain, */*',
+    'content-type': 'application/json',
+    referer: 'https://app.uniswap.org/',
+    origin: 'https://app.uniswap.org/',
+    ...(config.apiKey && { 'x-api-key': config.apiKey }),
+    ...(config.isBeta && { 'x-beta-rfq': 'true' }),
+  };
+  logVerboseRequest(config.verbose, url, headers, payload);
   try {
-    const response = await axios.post(
-      `${config.uniswapAPIUrl}/v1/quote`,
-      payload,
-      {
-        headers: {
-          accept: 'application/json, text/plain, */*',
-          'content-type': 'application/json',
-          referer: 'https://app.uniswap.org/',
-          origin: 'https://app.uniswap.org/',
-          ...(config.apiKey && { 'x-api-key': config.apiKey }),
-          ...(config.isBeta && { 'x-beta-rfq': 'true' }),
-        },
-      }
-    );
+    const response = await axios.post(url, payload, { headers });
+    logVerboseResponse(config.verbose, response.status, response.data);
     if (!response.data) {
       console.error('No quote available');
       process.exit(0);
