@@ -1,27 +1,10 @@
 import {
-  DutchOrder,
   UniswapXOrder,
   UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
   UnsignedV3DutchOrder,
 } from '@uniswap/uniswapx-sdk';
 import { Wallet } from 'ethers';
-import { ChainId } from './config';
-
-export async function signV1Order(
-  encodedOrder: string,
-  wallet: Wallet
-): Promise<{
-  readonly serializedOrder: string;
-  readonly hash: string;
-  readonly signature: string;
-}> {
-  const order = DutchOrder.parse(encodedOrder, ChainId.Mainnet);
-  const signature = await signOrder(order, wallet);
-  const serializedOrder = order.serialize();
-  const hash = order.hash();
-  return { serializedOrder, hash, signature };
-}
 
 export async function signV2Order(
   encodedOrder: string,

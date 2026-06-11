@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { ChainId, Config } from './config';
-import { OrderType } from '@uniswap/uniswapx-sdk';
+import { Config } from './config';
 
 function authHeaders(config: Config): Record<string, string> {
   return {
@@ -10,149 +9,44 @@ function authHeaders(config: Config): Record<string, string> {
   };
 }
 
-export async function submitV1Order(
+// Submits a gasless order to the Trading API.
+// https://developers.uniswap.org/docs/api-reference/post_order
+//
+// The order request is identical to the quote response (the `routing` and
+// `quote` fields returned from `/v1/quote`) plus the signed permit. The full
+// quote object must be passed back verbatim — it is not reconstructable from
+// the encoded order alone.
+export async function submitOrder(
   config: Config,
-  encodedOrder: string,
+  quote: unknown,
   signature: string,
-  quoteId?: string
+  routing: string
 ) {
-  const url = `${config.submitApiUrl}/v2/limit-order`;
+  const url = `${config.submitApiUrl}/v1/order`;
   const payload = {
-    encodedOrder,
     signature,
-    chainId: ChainId.Mainnet,
-    quoteId: quoteId,
+    quote,
+    routing,
   };
+  const headers = {
+    accept: 'application/json, text/plain, */*',
+    'content-type': 'application/json',
+    ...authHeaders(config),
+  };
+  console.error('Sending request:');
+  console.error('  URL:', `POST ${url}`);
+  console.error('  Headers:', JSON.stringify(headers, null, 2));
+  console.error('  Body:', JSON.stringify(payload, null, 2));
   try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
-    if (response.status !== 201) {
+    const response = await axios.post(url, payload, { headers });
+    if (response.status < 200 || response.status >= 300) {
       throw new Error(`Order submission failed with ${response.status}`);
     }
-    const { hash } = response.data;
-    console.log(`Order submitted with hash ${hash}`);
-    return hash;
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-export async function submitV2Order(
-  config: Config,
-  encodedInnerOrder: string,
-  innerSig: string,
-  chainId: number,
-  quoteId?: string
-) {
-  const url = `${config.submitApiUrl}/v2/rfq`;
-  const payload = {
-    encodedInnerOrder,
-    innerSig,
-    tokenInChainId: chainId,
-    tokenOutChainId: chainId,
-    quoteId: quoteId,
-    requestId: quoteId,
-    allowNoQuote: true,
-  };
-  try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
-    if (response.status !== 200) {
-      throw new Error(`Order submission failed with ${response.status}`);
-    }
-    const { orderHash, requestId } = response.data;
+    const { orderId, requestId, orderStatus } = response.data;
     console.log(
-      `Order submitted with hash ${orderHash}, requestId ${requestId}`
+      `Order submitted: orderId ${orderId}, requestId ${requestId}, status ${orderStatus}`
     );
-    return orderHash;
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-export async function submitV3Order(
-  config: Config,
-  encodedInnerOrder: string,
-  innerSig: string,
-  chainId: number,
-  quoteId?: string
-) {
-  const url = `${config.submitApiUrl}/v2/rfq`;
-  const payload = {
-    encodedInnerOrder,
-    innerSig,
-    tokenInChainId: chainId,
-    tokenOutChainId: chainId,
-    quoteId: quoteId,
-    requestId: quoteId,
-    allowNoQuote: true,
-    forceOpenOrder: true,
-  };
-  try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
-    if (response.status !== 200) {
-      throw new Error(`Order submission failed with ${response.status}`);
-    }
-    const { orderHash, requestId } = response.data;
-    console.log(
-      `Order submitted with hash ${orderHash}, requestId ${requestId}`
-    );
-    return orderHash;
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-export async function submitPriorityOrder(
-  config: Config,
-  encodedOrder: string,
-  signature: string,
-  chainId: number = ChainId.Base,
-  quoteId?: string
-) {
-  console.log('submitPriorityOrder', encodedOrder, signature, chainId, quoteId);
-  const url = `${config.submitApiUrl}/v2/order`;
-  const payload = {
-    encodedOrder,
-    signature,
-    chainId,
-    quoteId: quoteId,
-    orderType: OrderType.Priority,
-  };
-  try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        origin: 'https://app.uniswap.org',
-        accept: 'application/json, text/plain, */*',
-        'content-type': 'application/json',
-        ...authHeaders(config),
-      },
-    });
-    if (response.status !== 201) {
-      throw new Error(`Order submission failed with ${response.status}`);
-    }
-    const { hash } = response.data;
-    console.log(`Order submitted with hash ${hash}`);
-    return hash;
+    return orderId;
   } catch (e) {
     console.log(e);
   }

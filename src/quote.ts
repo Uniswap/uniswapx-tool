@@ -1,6 +1,4 @@
 import {
-  DutchOrder,
-  DutchOrderBuilder,
   UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
   UnsignedV3DutchOrder,
@@ -10,7 +8,6 @@ import axios from 'axios';
 import { ChainId, Config } from './config';
 
 enum OrderType {
-  DUTCH_V1 = 'DUTCH_LIMIT',
   DUTCH_V2 = 'DUTCH_V2',
   DUTCH_V3 = 'DUTCH_V3',
   PRIORITY = 'PRIORITY',
@@ -86,38 +83,6 @@ export type QuoteParams = {
 };
 
 // returns encoded order
-export async function quoteV1Order(
-  params: QuoteParams,
-  config: Config,
-  overrides?: Partial<DutchQuoteRequestConfigType>
-): Promise<{ readonly order: DutchOrder; readonly quoteId: string }> {
-  const payload = buildQuoteRequest(
-    params,
-    OrderType.DUTCH_V1,
-    ChainId.Mainnet,
-    overrides
-  );
-  const responseData = await makeQuoteRequest(payload, config);
-  const qid = responseData.quoteId;
-
-  const order = DutchOrder.parse(responseData.encodedOrder, ChainId.Mainnet);
-  const builder = DutchOrderBuilder.fromOrder(order);
-  const startTime =
-    Math.floor(Date.now() / 1000) + responseData.startTimeBufferSecs;
-  const endTime = startTime + responseData.auctionPeriodSecs;
-  const deadline = endTime + responseData.deadlineBufferSecs;
-
-  return {
-    order: builder
-      .decayStartTime(startTime)
-      .decayEndTime(endTime)
-      .deadline(deadline)
-      .build(),
-    quoteId: qid,
-  };
-}
-
-// returns encoded order
 export async function quoteV2Order(
   params: QuoteParams,
   config: Config,
@@ -125,7 +90,11 @@ export async function quoteV2Order(
   overrides: Partial<DutchV2V3QuoteRequestConfigType> = {
     forceOpenOrders: false,
   }
-): Promise<{ readonly order: UnsignedV2DutchOrder; readonly quoteId: string }> {
+): Promise<{
+  readonly order: UnsignedV2DutchOrder;
+  readonly quoteId: string;
+  readonly quote: QuoteResponse;
+}> {
   const payload = buildQuoteRequest(
     params,
     OrderType.DUTCH_V2,
@@ -140,6 +109,8 @@ export async function quoteV2Order(
   return {
     order,
     quoteId: qid,
+    // The raw quote object must be submitted back verbatim to `/v1/order`.
+    quote: responseData,
   };
 }
 
@@ -153,7 +124,11 @@ export async function quoteV3Order(
     useSyntheticQuotes: true,
   },
   slippageTolerance?: string
-): Promise<{ readonly order: UnsignedV3DutchOrder; readonly quoteId: string }> {
+): Promise<{
+  readonly order: UnsignedV3DutchOrder;
+  readonly quoteId: string;
+  readonly quote: QuoteResponse;
+}> {
   const payload = buildQuoteRequest(
     params,
     OrderType.DUTCH_V3,
@@ -169,6 +144,8 @@ export async function quoteV3Order(
   return {
     order,
     quoteId: qid,
+    // The raw quote object must be submitted back verbatim to `/v1/order`.
+    quote: responseData,
   };
 }
 
@@ -181,6 +158,7 @@ export async function quotePriorityOrder(
 ): Promise<{
   readonly order: UnsignedPriorityOrder;
   readonly quoteId: string;
+  readonly quote: QuoteResponse;
 }> {
   const payload = buildQuoteRequest(
     params,
@@ -197,6 +175,8 @@ export async function quotePriorityOrder(
   return {
     order,
     quoteId: qid,
+    // The raw quote object must be submitted back verbatim to `/v1/order`.
+    quote: responseData,
   };
 }
 
@@ -262,21 +242,21 @@ async function makeQuoteRequest(
   payload: QuoteRequestType,
   config: Config
 ): Promise<QuoteResponse> {
+  const url = `${config.uniswapAPIUrl}/v1/quote`;
+  const headers = {
+    accept: 'application/json, text/plain, */*',
+    'content-type': 'application/json',
+    referer: 'https://app.uniswap.org/',
+    origin: 'https://app.uniswap.org/',
+    ...(config.apiKey && { 'x-api-key': config.apiKey }),
+    ...(config.isBeta && { 'x-beta-rfq': 'true' }),
+  };
+  console.error('Sending request:');
+  console.error('  URL:', `POST ${url}`);
+  console.error('  Headers:', JSON.stringify(headers, null, 2));
+  console.error('  Body:', JSON.stringify(payload, null, 2));
   try {
-    const response = await axios.post(
-      `${config.uniswapAPIUrl}/v1/quote`,
-      payload,
-      {
-        headers: {
-          accept: 'application/json, text/plain, */*',
-          'content-type': 'application/json',
-          referer: 'https://app.uniswap.org/',
-          origin: 'https://app.uniswap.org/',
-          ...(config.apiKey && { 'x-api-key': config.apiKey }),
-          ...(config.isBeta && { 'x-beta-rfq': 'true' }),
-        },
-      }
-    );
+    const response = await axios.post(url, payload, { headers });
     if (!response.data) {
       console.error('No quote available');
       process.exit(0);

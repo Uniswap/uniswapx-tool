@@ -1,5 +1,4 @@
 const PROD_UNISWAP_API_URL = 'https://trade-api.gateway.uniswap.org';
-const PROD_SUBMIT_API_URL = 'https://api.uniswap.org';
 
 export enum ChainId {
   Mainnet = 1,
@@ -29,14 +28,14 @@ export function getConfig(env: Env): Config {
     case Env.Beta:
       return {
         uniswapAPIUrl: PROD_UNISWAP_API_URL,
-        submitApiUrl: PROD_SUBMIT_API_URL,
+        submitApiUrl: PROD_UNISWAP_API_URL,
         apiKey,
         isBeta: true,
       };
     case Env.Prod:
       return {
         uniswapAPIUrl: PROD_UNISWAP_API_URL,
-        submitApiUrl: PROD_SUBMIT_API_URL,
+        submitApiUrl: PROD_UNISWAP_API_URL,
         apiKey,
         isBeta: false,
       };
