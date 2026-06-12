@@ -24,7 +24,7 @@ function setupProgram() {
     .addOption(
       new Option('--env <env>', 'Environment')
         .choices(['beta', 'prod'])
-        .default('beta')
+        .default('prod')
     )
     .option(
       '-v, --verbose',
