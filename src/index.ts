@@ -5,8 +5,9 @@ import {
   UnsignedV3DutchOrder,
 } from '@uniswap/uniswapx-sdk';
 import { Command, Option, program } from 'commander';
-import { Wallet } from 'ethers';
+import { BigNumber, constants, Wallet } from 'ethers';
 
+import { approveToken, getRpcUrl, permit2Address } from './approve';
 import { ChainId, getConfig } from './config';
 import { quotePriorityOrder, quoteV2Order, quoteV3Order } from './quote';
 import { signPriorityOrder, signV2Order, signV3Order } from './sign';
@@ -34,6 +35,50 @@ function setupProgram() {
   setupUniswapXV2();
   setupUniswapXV3();
   setupPriority();
+  setupApprove();
+}
+
+function setupApprove() {
+  program
+    .command('approve')
+    .description(
+      'Approve a token to Permit2 so UniswapX reactors can pull funds (defaults to infinite allowance)'
+    )
+    .requiredOption('--token <token>', 'Token to approve')
+    .option(
+      '--spender [spender]',
+      'Spender address (defaults to Permit2 for the chain)'
+    )
+    .option(
+      '--amount [amount]',
+      'Allowance amount in wei (defaults to infinite)'
+    )
+    .option('--private-key [privateKey]', 'private key')
+    .option(
+      '--rpc-url [rpcUrl]',
+      'RPC URL (defaults per chain, or RPC_URL env var)'
+    )
+    .option('-c, --chain-id [chainId]', 'chain id', ChainId.Mainnet.toString())
+    .action(async (options) => {
+      const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
+      if (!privateKey) {
+        console.error(
+          'Private key is required (pass --private-key or set UNISWAP_PRIVATE_KEY)'
+        );
+        process.exit(1);
+      }
+      const chainId = parseInt(options.chainId, 10);
+      await approveToken({
+        privateKey,
+        token: options.token,
+        spender: options.spender ?? permit2Address(chainId),
+        amount: options.amount
+          ? BigNumber.from(options.amount)
+          : constants.MaxUint256,
+        chainId,
+        rpcUrl: getRpcUrl(chainId, options.rpcUrl),
+      });
+    });
 }
 
 function setupUniswapXV2() {
@@ -112,7 +157,7 @@ function setupUniswapXV2() {
       const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
 
-      let quote: { encodedOrder: string };
+      let quote: { readonly encodedOrder: string };
       try {
         quote = JSON.parse(quoteJson);
       } catch {
@@ -230,7 +275,7 @@ function setupUniswapXV3() {
       const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
 
-      let quote: { encodedOrder: string };
+      let quote: { readonly encodedOrder: string };
       try {
         quote = JSON.parse(quoteJson);
       } catch {
@@ -335,7 +380,7 @@ function setupPriority() {
       const config = getConfig(globalOpts.env, globalOpts.verbose);
       const privateKey = options.privateKey ?? process.env.UNISWAP_PRIVATE_KEY;
 
-      let quote: { encodedOrder: string };
+      let quote: { readonly encodedOrder: string };
       try {
         quote = JSON.parse(quoteJson);
       } catch {
