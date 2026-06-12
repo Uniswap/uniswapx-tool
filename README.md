@@ -114,7 +114,7 @@ Options:
 
 Global Options:
   -V, --version                output the version number
-  --env <env>                  Environment (choices: "beta", "prod", default: "beta")
+  --env <env>                  Environment (choices: "beta", "prod", default: "prod")
 ```
 
 ### Simple order creation
@@ -213,7 +213,7 @@ Options:
 
 Global Options:
   -V, --version                output the version number
-  --env <env>                  Environment (choices: "beta", "prod", default: "beta")
+  --env <env>                  Environment (choices: "beta", "prod", default: "prod")
 ```
 
 ### Simple order creation
@@ -307,7 +307,7 @@ Options:
 
 Global Options:
   -V, --version                output the version number
-  --env <env>                  Environment (choices: "beta", "prod", default: "beta")
+  --env <env>                  Environment (choices: "beta", "prod", default: "prod")
 ```
 
 ### Simple order creation
