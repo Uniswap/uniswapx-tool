@@ -7,12 +7,27 @@ const ERC20_ABI = [
   'function symbol() view returns (string)',
 ];
 
+// Public keyless RPC endpoints for every chain with a UniswapX reactor
+// deployment (per the SDK's REACTOR_ADDRESS_MAPPING).
 const DEFAULT_RPC_URLS: Record<number, string> = {
-  1: 'https://eth.llamarpc.com',
-  56: 'https://bsc-dataseed.binance.org',
-  130: 'https://mainnet.unichain.org',
-  8453: 'https://mainnet.base.org',
-  42161: 'https://arb1.arbitrum.io/rpc',
+  1: 'https://ethereum-rpc.publicnode.com', // Mainnet
+  10: 'https://mainnet.optimism.io', // Optimism
+  56: 'https://bsc-dataseed.binance.org', // BNB Chain
+  130: 'https://mainnet.unichain.org', // Unichain
+  137: 'https://polygon-bor-rpc.publicnode.com', // Polygon
+  143: 'https://rpc.monad.xyz', // Monad
+  196: 'https://rpc.xlayer.tech', // X Layer
+  480: 'https://worldchain-mainnet.g.alchemy.com/public', // World Chain
+  1868: 'https://rpc.soneium.org', // Soneium
+  4217: 'https://rpc.tempo.xyz', // Tempo
+  8453: 'https://mainnet.base.org', // Base
+  42161: 'https://arb1.arbitrum.io/rpc', // Arbitrum
+  42220: 'https://forno.celo.org', // Celo
+  43114: 'https://api.avax.network/ext/bc/C/rpc', // Avalanche
+  81457: 'https://rpc.blast.io', // Blast
+  7777777: 'https://rpc.zora.energy', // Zora
+  1301: 'https://sepolia.unichain.org', // Unichain Sepolia
+  11155111: 'https://ethereum-sepolia-rpc.publicnode.com', // Sepolia
 };
 
 // UniswapX reactors never hold ERC20 allowances directly; the swapper approves
