@@ -1,7 +1,7 @@
 import {
+  CosignedV3DutchOrder,
   UnsignedPriorityOrder,
   UnsignedV2DutchOrder,
-  UnsignedV3DutchOrder,
 } from '@uniswap/uniswapx-sdk';
 import axios from 'axios';
 
@@ -27,6 +27,7 @@ export type QuoteResponse = {
   readonly deadlineBufferSecs: number;
   readonly slippageTolerance: string;
   readonly quoteId: string;
+  readonly orderInfo?: Record<string, unknown>;
 };
 
 export type DutchQuoteRequestConfigType = {
@@ -126,7 +127,7 @@ export async function quoteV3Order(
   overrides: Partial<DutchV2V3QuoteRequestConfigType> = {},
   slippageTolerance?: string
 ): Promise<{
-  readonly order: UnsignedV3DutchOrder;
+  readonly order: CosignedV3DutchOrder;
   readonly quoteId: string;
   readonly quote: QuoteResponse;
 }> {
@@ -140,7 +141,7 @@ export async function quoteV3Order(
   const responseData = await makeQuoteRequest(payload, config);
   const qid = responseData.quoteId;
 
-  const order = UnsignedV3DutchOrder.parse(responseData.encodedOrder, chainId);
+  const order = CosignedV3DutchOrder.parse(responseData.encodedOrder, chainId);
 
   return {
     order,
