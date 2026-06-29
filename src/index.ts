@@ -246,7 +246,7 @@ function setupUniswapXV3() {
         const overridden = UnsignedV3DutchOrder.fromJSON(
           Object.assign(
             JSON.parse(JSON.stringify(
-              UnsignedV3DutchOrder.parse(quote.encodedOrder, options.chainId).toJSON()
+              UnsignedV3DutchOrder.parse(quote.encodedOrder, options.chainId, permit2Address(parseInt(options.chainId))).toJSON()
             )),
             { cosigner: options.cosigner }
           ),

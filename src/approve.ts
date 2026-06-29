@@ -33,12 +33,11 @@ const DEFAULT_RPC_URLS: Record<number, string> = {
 // UniswapX reactors never hold ERC20 allowances directly; the swapper approves
 // Permit2 once and reactors pull funds through it via the per-order signed
 // permit. So "approve the reactor" means approving Permit2 for the token.
+// Permit2 is deployed at the same address on every chain.
+const UNIVERSAL_PERMIT2 = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
+
 export function permit2Address(chainId: number): string {
-  const permit2 = (PERMIT2_MAPPING as Record<number, string>)[chainId];
-  if (!permit2) {
-    throw new Error(`No known Permit2 deployment for chain ${chainId}`);
-  }
-  return permit2;
+  return (PERMIT2_MAPPING as Record<number, string>)[chainId] ?? UNIVERSAL_PERMIT2;
 }
 
 export function getRpcUrl(chainId: number, override?: string): string {

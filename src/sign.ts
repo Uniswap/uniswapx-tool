@@ -4,6 +4,8 @@ import {
   UnsignedV2DutchOrder,
   UnsignedV3DutchOrder,
 } from '@uniswap/uniswapx-sdk';
+
+import { permit2Address } from './approve';
 import { Wallet } from 'ethers';
 
 export async function signV2Order(
@@ -15,7 +17,7 @@ export async function signV2Order(
   readonly hash: string;
   readonly signature: string;
 }> {
-  const order = UnsignedV2DutchOrder.parse(encodedOrder, chainId);
+  const order = UnsignedV2DutchOrder.parse(encodedOrder, chainId, permit2Address(chainId));
   const signature = await signOrder(order, wallet);
   const serializedOrder = order.serialize();
   const hash = order.hash();
@@ -31,7 +33,7 @@ export async function signV3Order(
   readonly hash: string;
   readonly signature: string;
 }> {
-  const order = UnsignedV3DutchOrder.parse(encodedOrder, chainId);
+  const order = UnsignedV3DutchOrder.parse(encodedOrder, chainId, permit2Address(chainId));
   const signature = await signOrder(order, wallet);
   const serializedOrder = order.serialize();
   const hash = order.hash();
@@ -47,7 +49,7 @@ export async function signPriorityOrder(
   readonly hash: string;
   readonly signature: string;
 }> {
-  const order = UnsignedPriorityOrder.parse(encodedOrder, chainId);
+  const order = UnsignedPriorityOrder.parse(encodedOrder, chainId, permit2Address(chainId));
   const signature = await signOrder(order, wallet);
   const serializedOrder = order.serialize();
   const hash = order.hash();
