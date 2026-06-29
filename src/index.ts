@@ -240,7 +240,9 @@ function setupUniswapXV3() {
       );
 
       // rebuild with overrides — overriding cosigner invalidates the existing
-      // cosignature, so we produce a fresh unsigned order in that case.
+      // cosignature, so we produce a fresh unsigned order in that case. This
+      // should be purely defensive as cosigner data should be empty after the
+      // quote
       let encodedOrder: string;
       if (options.cosigner) {
         const overridden = UnsignedV3DutchOrder.fromJSON(
