@@ -217,8 +217,7 @@ function setupUniswapXV3() {
     .action(async (options) => {
       const globalOpts = program.optsWithGlobals();
       const config = getConfig(globalOpts.env, globalOpts.verbose);
-      // eslint-disable-next-line prefer-const
-      let { order, quote } = await quoteV3Order(
+      const { quote } = await quoteV3Order(
         {
           tokenIn: options.tokenIn,
           tokenOut: options.tokenOut,
@@ -240,25 +239,33 @@ function setupUniswapXV3() {
         options.slippageTolerance
       );
 
-      // rebuild with overrides
+      // rebuild with overrides — overriding cosigner invalidates the existing
+      // cosignature, so we produce a fresh unsigned order in that case. This
+      // should be purely defensive as cosigner data should be empty after the
+      // quote
+      let encodedOrder: string;
       if (options.cosigner) {
-        order = UnsignedV3DutchOrder.fromJSON(
-          Object.assign(order.toJSON(), {
-            ...(options.cosigner && {
-              cosigner: options.cosigner,
-            }),
-          }),
+        const overridden = UnsignedV3DutchOrder.fromJSON(
+          Object.assign(
+            JSON.parse(JSON.stringify(
+              UnsignedV3DutchOrder.parse(quote.encodedOrder, options.chainId, permit2Address(parseInt(options.chainId))).toJSON()
+            )),
+            { cosigner: options.cosigner }
+          ),
           options.chainId
         );
+        encodedOrder = overridden.serialize();
+      } else {
+        encodedOrder = quote.encodedOrder;
       }
 
       if (options.serialize) {
-        console.log(order.serialize());
+        console.log(encodedOrder);
       } else {
         // Print the raw quote object so it can be piped straight into
         // `v3 submit`, keeping the encoded order in sync with any overrides.
         console.log(
-          JSON.stringify({ ...quote, encodedOrder: order.serialize() })
+          JSON.stringify({ ...quote, encodedOrder })
         );
       }
     });
